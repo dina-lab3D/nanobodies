@@ -39,19 +39,25 @@ while(<DATA>) {
       chdir $folder;
       $folder_counter++;
   }
-  if($seq_counter > 0) {
+  if($seq_counter >= 0) {
     chomp;
     my @tmp=split(',',$_);
-    my $cdr3 = $tmp[$cdr3_col];
+    my $cdr3 = $tmp[$cdr3_col];$cdr3 =~ s/^\s+//;
     my $seqnum = int $tmp[$num_col]; #id
-    my $header = $tmp[$header_col]; #id
-    my $sequence = $tmp[$seq_col];
+    my $header = $tmp[$header_col]; $header =~ s/^\s+//;
+    my $sequence = $tmp[$seq_col]; $sequence =~ s/^\s+//;
+    my $cdr1 = $tmp[$cdr3_col+1];
+    my $cdr2 = $tmp[$cdr3_col+2];
+
     my $dirname = "seq_" . $seqnum;
-    print "$dirname $seqnum $header $cdr3 $sequence\n";
+    print "$dirname $seqnum $header $cdr3 $sequence $cdr1 $cdr2\n";
+
 
     if(-e "$dirname/nb_loop_0.pdb") {
       chdir $dirname;
       if(not (-e "soap_score4.res" and (-s "soap_score4.res" > 200))) {
+          writeCDR3File($cdr3, $sequence);
+          writeFrameFile($cdr1, $cdr2, $cdr3, $sequence);
           print "Missing docking $dirname\n";
           my $cmd = "$home/dock.pl $dirname";
           print "$cmd\n";
@@ -67,4 +73,44 @@ while(<DATA>) {
     }
   }
   $seq_counter++;
+}
+
+sub writeCDR3File {
+    my $cdr3 = shift;
+    my $sequence = shift;
+    my $cdr3_start = index($sequence, $cdr3);
+    my $cdr3_end = $cdr3_start + length($cdr3);
+    $cdr3_start +=1;
+    print "CDR3 loop: $cdr3_start $cdr3_end\n";
+    open OUT, ">mycdrs3";
+    for(my $i=$cdr3_start; $i<$cdr3_end; $i++) {
+        print OUT "$i H\n";
+    }
+    close OUT;
+}
+
+sub writeFrameFile {
+    my $cdr1 = shift;
+    my $cdr2 = shift;
+    my $cdr3 = shift;
+    my $sequence = shift;
+
+    my $cdr1_start = index($sequence, $cdr1);
+    my $cdr1_end = $cdr1_start + length($cdr1);
+    $cdr1_start +=1;
+
+    my $cdr2_start = index($sequence, $cdr2);
+    my $cdr2_end = $cdr2_start + length($cdr2);
+    $cdr2_start +=1;
+
+    my $cdr3_start = index($sequence, $cdr3);
+    my $cdr3_end = $cdr3_start + length($cdr3);
+    $cdr3_start +=1;
+
+    open OUT, ">myframe";
+    for(my $i=1; $i<$cdr1_start-3; $i++) { print OUT "$i H\n"; }
+    for(my $i=$cdr1_end+3; $i<$cdr2_start-3; $i++) { print OUT "$i H\n"; }
+    for(my $i=$cdr2_end+3; $i<$cdr3_start-3; $i++) { print OUT "$i H\n"; }
+    for(my $i=$cdr3_end+3; $i<length($sequence); $i++) { print OUT "$i H\n"; }
+    close OUT;
 }

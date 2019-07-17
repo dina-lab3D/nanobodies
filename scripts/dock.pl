@@ -42,6 +42,10 @@ for(my $i=0; $i<$#ARGV+1; $i++) {
     print OUT "$cmd\n";
     $cmd = "mv params.txt params$j.txt";
     print OUT "$cmd\n";
+    $cmd = "cp mycdrs3 cdrs3";
+    print OUT "$cmd\n";
+    $cmd = "cp myframe frame";
+    print OUT "$cmd\n";
 
     # patchdock
     if(not (-e "docking$j.res" and (-s "docking$j.res" > 1000))) {
@@ -57,7 +61,9 @@ for(my $i=0; $i<$#ARGV+1; $i++) {
       print OUT "$cmd\n";
     }
   }
+
   close OUT;
+
   `sbatch --time=8:0:0 dscript.sh`;
   chdir "..";
 }

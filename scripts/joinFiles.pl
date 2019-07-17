@@ -2,8 +2,8 @@
 
 use strict;
 
-if ($#ARGV != 6) {
-  print "Usage: joinFiles.pl <file1> <file2> <file3> <header_col> <seq_col> <cdr3_col> <affinity_col>\n";
+if ($#ARGV != 8) {
+  print "Usage: joinFiles.pl <file1> <file2> <file3> <header_col> <seq_col> <cdr1_col> <cdr2_col> <cdr3_col> <affinity_col>\n";
   exit;
 }
 
@@ -13,8 +13,10 @@ my $sequence_file3 = $ARGV[2];
 
 my $header_col = $ARGV[3];
 my $seq_col = $ARGV[4];
-my $cdr3_col = $ARGV[5];
-my $affinity_col = $ARGV[6];
+my $cdr1_col = $ARGV[5];
+my $cdr2_col = $ARGV[6];
+my $cdr3_col = $ARGV[7];
+my $affinity_col = $ARGV[8];
 
 my %map_id1;
 my %map_id2;
@@ -56,6 +58,8 @@ foreach my $key (keys %map_id1) {
     my @tmp = split(',', $map_id1{$key});
     my $affinity1 = $tmp[$affinity_col];
     my $seq = $tmp[$seq_col];
+    my $cdr1 = $tmp[$cdr1_col];
+    my $cdr2 = $tmp[$cdr2_col];
     my $cdr3 = $tmp[$cdr3_col];
 
     if(exists $map_id2{$key}) {
@@ -67,7 +71,7 @@ foreach my $key (keys %map_id1) {
       $affinity3 = $tmp[$affinity_col];
     }
 
-    print "$counter,$key,$seq,$cdr3,$affinity1,$affinity2,$affinity3 \n";
+    print "$counter,$key,$seq,$cdr1,$cdr2,$cdr3,$affinity1,$affinity2,$affinity3 \n";
     $counter++;
 }
 
@@ -77,6 +81,8 @@ foreach my $key (keys %map_id2) {
     my @tmp = split(',', $map_id2{$key});
     my $affinity2 = $tmp[$affinity_col];
     my $seq = $tmp[$seq_col];
+    my $cdr1 = $tmp[$cdr1_col];
+    my $cdr2 = $tmp[$cdr2_col];
     my $cdr3 = $tmp[$cdr3_col];
 
     if(exists $map_id1{$key}) { next; }
@@ -85,7 +91,7 @@ foreach my $key (keys %map_id2) {
       $affinity3 = $tmp[$affinity_col];
     }
 
-    print "$counter,$key,$seq,$cdr3,-1,$affinity2,$affinity3 \n";
+    print "$counter,$key,$seq,$cdr1,$cdr2,$cdr3,-1,$affinity2,$affinity3 \n";
     $counter++;
 }
 
@@ -97,8 +103,10 @@ foreach my $key (keys %map_id3) {
     my @tmp = split(',', $map_id3{$key});
     my $affinity3 = $tmp[$affinity_col];
     my $seq = $tmp[$seq_col];
+    my $cdr1 = $tmp[$cdr1_col];
+    my $cdr2 = $tmp[$cdr2_col];
     my $cdr3 = $tmp[$cdr3_col];
 
-    print "$counter,$key,$seq,$cdr3,-1,-1,$affinity3 \n";
+    print "$counter,$key,$seq,$cdr1,$cdr2,$cdr3,-1,-1,$affinity3 \n";
     $counter++;
 }
