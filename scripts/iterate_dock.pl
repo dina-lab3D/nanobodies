@@ -9,8 +9,8 @@ my $home = "$FindBin::Bin";
 require "$home/Util.pm";
 
 
-if ($#ARGV != 4) {
-  print "Usage: iterate_dock.pl <nanobodies_csv_file> <num_col> <header_col> <seq_col> <cdr3_col>\n";
+if ($#ARGV != 5) {
+  print "Usage: iterate_dock.pl <nanobodies_csv_file> <num_col> <header_col> <seq_col> <cdr3_col> <antigen.pdb>\n";
   exit;
 }
 
@@ -19,6 +19,7 @@ my $num_col = $ARGV[1];
 my $header_col = $ARGV[2];
 my $seq_col = $ARGV[3];
 my $cdr3_col = $ARGV[4];
+my $antigenPDB = $ARGV[5];
 
 my $seq_counter = 0;
 my $folder_counter = 1;
@@ -59,12 +60,12 @@ while(<DATA>) {
           writeCDR3File($cdr3, $sequence);
           writeFrameFile($cdr1, $cdr2, $cdr3, $sequence);
           print "Missing docking $dirname\n";
-          my $cmd = "$home/dock.pl $dirname";
+          my $cmd = "$home/dock.pl $antigenPDB $dirname";
           print "$cmd\n";
           `$cmd`;
            $job_counter++;
           my $hours3 = 3600*5;
-          if($job_counter > 500) { $job_counter = 0; sleep($hours3); }
+          if($job_counter > 300) { $job_counter = 0; sleep($hours3); }
 
       } else {
           print "Docking done $dirname\n";

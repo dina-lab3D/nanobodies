@@ -10,7 +10,7 @@ my $pd_home = "/cs/staff/dina/projects2/PatchDock/";
 my $imp_home = "/cs/labs/dina/dina/libs/imp_fast/";
 
 if ($#ARGV < 0) {
-  print "Usage: dock.pl <antigen_pdb> <folder1> <folder2>...\n";
+  print "Usage: dockXL.pl <antigen_pdb> <folder1> <folder2>...\n";
   exit;
 }
 
@@ -64,6 +64,6 @@ for(my $i=1; $i<$#ARGV+1; $i++) {
 
   close OUT;
 
-  `sbatch --time=8:0:0 dscript.sh`;
+  `sbatch --time=48:0:0 dscript.sh`;
   chdir "..";
 }
