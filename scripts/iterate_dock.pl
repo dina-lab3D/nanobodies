@@ -10,7 +10,7 @@ require "$home/Util.pm";
 
 
 if ($#ARGV != 5) {
-  print "Usage: iterate_dock.pl <nanobodies_csv_file> <num_col> <header_col> <seq_col> <cdr3_col> <antigen.pdb>\n";
+  print "Usage: iterate_dock.pl <nanobodies_csv_file> <num_col> <header_col> <seq_col> <cdr3_col> <antigen.pdb (full path)>\n";
   exit;
 }
 
@@ -60,12 +60,13 @@ while(<DATA>) {
           writeCDR3File($cdr3, $sequence);
           writeFrameFile($cdr1, $cdr2, $cdr3, $sequence);
           print "Missing docking $dirname\n";
-          my $cmd = "$home/dock.pl $antigenPDB $dirname";
-          print "$cmd\n";
+          my $cmd = "$home/dock.pl $antigenPDB";
+          my $curr = cwd;
+          print "$cmd $curr\n";
           `$cmd`;
            $job_counter++;
-          my $hours3 = 3600*5;
-          if($job_counter > 300) { $job_counter = 0; sleep($hours3); }
+          my $hours3 = 3600*3;
+          if($job_counter > 500) { $job_counter = 0; sleep($hours3); }
 
       } else {
           print "Docking done $dirname\n";

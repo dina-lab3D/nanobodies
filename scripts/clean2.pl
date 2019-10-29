@@ -51,7 +51,7 @@ while(<DATA>) {
         chdir $dirname;
 
         `rm -f trans* params*.txt script.sh dscript.sh`;
-        `rm -f slurm* patch*.log `;
+        `rm -f slurm* patch*.log`;
         chdir "..";
     }
   }
