@@ -47,11 +47,14 @@ while(<DATA>) {
     my $dirname = "seq_" . $seqnum;
     print "$dirname $seqnum $header $cdr3 $sequence\n";
 
-    if(-e "$dirname/mycdrs3") {
+    if(-e "$dirname/nb_loop_0.pdb") {
         chdir $dirname;
 
         `rm -f trans* params*.txt script.sh dscript.sh`;
         `rm -f slurm* patch*.log`;
+        if((-e "nb_loop_0.pdb") and (-e "soap_score4.res") and (-s "soap_score4.res" > 200)) {
+            print "done $dirname\n";
+        }
         chdir "..";
     }
   }
