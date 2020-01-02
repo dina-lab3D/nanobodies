@@ -9,14 +9,15 @@ my $home = "$FindBin::Bin";
 require "$home/Util.pm";
 
 
-if ($#ARGV != 0 and $#ARGV != 1) {
-  print "Usage: generateModels.pl <dirname> [prefix]\n";
+if ($#ARGV != 1 and $#ARGV != 2) {
+  print "Usage: generateModels.pl <dirname> <antigen.pdb (full path)> [prefix]\n";
   exit;
 }
 
 my $dirname = $ARGV[0];
+my $antigenPDB = $ARGV[1];
 my $prefix = "";
-if($#ARGV == 1) { $prefix = $ARGV[1]; }
+if($#ARGV == 2) { $prefix = $ARGV[2]; }
 
 chdir $dirname;# || die "NO SUCH Directory: $ARGV[0]";
 opendir(DIR, ".");
@@ -28,12 +29,13 @@ while (my $dirname = readdir(DIR)) {
     my $soapfile4 = $prefix . "soap_score4.res";
     if((-e "$dirname/$soapfile4") and (-s "$dirname/$soapfile4" > 200)) {
         chdir $dirname;
+        `cp $antigenPDB .`;
         my $soapfiles = $prefix . "soap_score0.res " . $prefix . "soap_score1.res " . $prefix . "soap_score2.res " . $prefix . "soap_score3.res " . $prefix . "soap_score4.res";
         my $cmd = `grep "|" $soapfiles | grep -v SOAP | awk '{print \$1" "\$2" "\$4}' | sort -nk3 | head -10`;
         print $dirname;
         `grep "|" $soapfiles | grep -v SOAP | awk '{print \$1" "\$2" "\$4}' | sort -nk3 | head -10 > top10.txt`;
-        #my $soap = `awk '{sum+=\$3} END {print sum/NR}' top10.txt`; chomp $soap;
-        #`cp ../../1n5u.pdb .`; # copy the GST
+        my $soap = `awk '{sum+=\$3} END {print sum/NR}' top10.txt`; chomp $soap;
+
         foreach (split(/\n/,$cmd)) {
             #print "new $_\n";
             my @tmp = split (' ', $_);
@@ -52,18 +54,18 @@ while (my $dirname = readdir(DIR)) {
             `$cmd`;
         }
 
-        # my $cdr3len = length $cdr3;
-        # $cmd =  "echo $line, $dirname, $cdr3len, $soap, > tmp";
-        # `$cmd`;
-        # $cmd = "cat epi.csv >> tmp";
-        # `$cmd`;
-        # `tr '\n' ' ' < tmp > stat.csv`;
-        # `sed -i -e '\$a\\' stat.csv`;
-        #`echo \n >> stat.csv`;
+        my $cdr3len = `wc cdrs3 | cut -d ' ' -f2`; chomp $cdr3len;
+        $cmd =  "echo $dirname, $cdr3len, $soap, > tmp";
+        `$cmd`;
+        $cmd = "cat epi.csv >> tmp";
+        `$cmd`;
+        `tr '\n' ' ' < tmp > stat.csv`;
+        `sed -i -e '\$a\\' stat.csv`;
+        `echo \n >> stat.csv`;
         #print "$dirname $header $cdr3 $cdr3len $cmd1 $cmd10 $cmd100 $cmd1000  $label\n";
 
         #`rm -f soap_score*.pdb log 1dug.pdb`;
-        #`cat stat.csv >> ../../epi_stat.csv`;
+        `cat stat.csv >> ../../epi_stat.csv`;
 
 
         if((-e "xlsoap_score4.res") and (-s "xlsoap_score4.res" > 200)) {

@@ -76,9 +76,10 @@ while(<DATA2>) {
         }
     }
     if (length($folder) > 0) {
-        print "Docking done $id1 $id2 $folder\n";
+        #print "Docking done $id1 $id2 $folder\n";
     } else {
-        print "Missing, $seq_counter, $id1, $id2, $tmp[2], $tmp[3], $tmp[4], $tmp[5]\n";
+        #print "Missing, $seq_counter, $id1, $id2, $tmp[2], $tmp[3], $tmp[4], $tmp[5]\n";
+        print "$seq_counter, $_\n";
         $seq_counter++;
     }
 }

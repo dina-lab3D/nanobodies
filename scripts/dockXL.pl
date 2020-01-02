@@ -21,9 +21,6 @@ for(my $i=1; $i<$#ARGV+1; $i++) {
   `cp $antigen $dirname/`; # copy the antigen
   chdir $dirname;
   print $dirname;
-  my $pdbs = `grep LOOP model.log | sort -nk4 | head -n5 | awk '{print \$2}' | tr '\n' ' '`;
-  print $pdbs;
-  my @list = split(' ', $pdbs);
 
   my $currdir = cwd;
   open OUT, ">dscript.sh";
@@ -53,13 +50,25 @@ for(my $i=1; $i<$#ARGV+1; $i++) {
       print OUT "$cmd\n";
       $cmd = "$pd_home/PatchDockOut2Trans.pl xldocking$j.res > trans$j";
       print OUT "$cmd\n";
+      #my $best_xl_thr = `grep ratio patch_dock.log | cut -d ' ' -f9`;
+
     }
 
     # soap score
     if(not (-e "xlsoap_score$j.res" and (-s "xlsoap_score$j.res" > 200))) {
       $cmd = "$imp_home/setup_environment.sh $imp_home/bin/soap_score $antigenPDB $loopfile trans$j -o xlsoap_score$j.res";
       print OUT "$cmd\n";
+
     }
+
+    my $best_xl_thr = `grep \"|\" xldocking?.res | grep -v rmsd | cut -d '|' -f13 | sort | tail -n1`;
+    chomp $best_xl_thr;
+    print $best_xl_thr;
+    $cmd = "$pd_home/PatchDockOut2TransXLthr.pl xldocking$j.res $best_xl_thr > best_trans$j";
+    print OUT "$cmd\n";
+    $cmd = "$imp_home/setup_environment.sh $imp_home/bin/soap_score $antigenPDB $loopfile best_trans$j -o best_xlsoap_score$j.res";
+    print OUT "$cmd\n";
+
   }
 
   close OUT;

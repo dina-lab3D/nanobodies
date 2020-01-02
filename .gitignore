@@ -1,0 +1,8 @@
+*.o
+*~
+HSA
+OMP25
+GST_run_all
+GST_run
+old
+scripts/old
