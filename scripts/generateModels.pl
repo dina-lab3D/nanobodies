@@ -18,7 +18,7 @@ my $dirname = $ARGV[0];
 my $antigenPDB = $ARGV[1];
 my $prefix = "";
 if($#ARGV == 2) { $prefix = $ARGV[2]; }
-
+my $N = 10;
 chdir $dirname;# || die "NO SUCH Directory: $ARGV[0]";
 opendir(DIR, ".");
 
@@ -31,10 +31,11 @@ while (my $dirname = readdir(DIR)) {
         chdir $dirname;
         `cp $antigenPDB .`;
         my $soapfiles = $prefix . "soap_score0.res " . $prefix . "soap_score1.res " . $prefix . "soap_score2.res " . $prefix . "soap_score3.res " . $prefix . "soap_score4.res";
-        my $cmd = `grep "|" $soapfiles | grep -v SOAP | awk '{print \$1" "\$2" "\$4}' | sort -nk3 | head -10`;
+        #my $cmd = `grep "|" $soapfiles | grep -v SOAP | awk '{print \$1" "\$2" "\$4}' | sort -nk3 | head -10`;
+        my $cmd = `grep "|" $soapfiles | grep -v SOAP | awk '{print \$1" "\$2" "\$4}' | sort -nk3 | head -$N`;
         print $dirname;
-        `grep "|" $soapfiles | grep -v SOAP | awk '{print \$1" "\$2" "\$4}' | sort -nk3 | head -10 > top10.txt`;
-        my $soap = `awk '{sum+=\$3} END {print sum/NR}' top10.txt`; chomp $soap;
+        `grep "|" $soapfiles | grep -v SOAP | awk '{print \$1" "\$2" "\$4}' | sort -nk3 | head -$N > top$N.txt`;
+        my $soap = `awk '{sum+=\$3} END {print sum/NR}' top$N.txt`; chomp $soap;
 
         foreach (split(/\n/,$cmd)) {
             #print "new $_\n";
@@ -64,24 +65,8 @@ while (my $dirname = readdir(DIR)) {
         `echo \n >> stat.csv`;
         #print "$dirname $header $cdr3 $cdr3len $cmd1 $cmd10 $cmd100 $cmd1000  $label\n";
 
-        #`rm -f soap_score*.pdb log 1dug.pdb`;
+        `rm -f soap_score*.pdb log `;
         `cat stat.csv >> ../../epi_stat.csv`;
-
-
-        if((-e "xlsoap_score4.res") and (-s "xlsoap_score4.res" > 200)) {
-
-          $cmd = `grep "|" xlsoap_score?.res | grep -v SOAP | awk '{print \$1" "\$2" "\$4}' | sort -nk3 | head -10`;
-          `grep "|" xlsoap_score?.res | grep -v SOAP | awk '{print \$1" "\$2" "\$4}' | sort -nk3 | head -10 > top10xl.txt`;
-          foreach (split(/\n/,$cmd)) {
-            my @tmp = split (' ', $_);
-            chop $tmp[0];
-            my $soap_file = $tmp[0];
-            my $res_num = $tmp[1];
-            my $cmdt = "/cs/staff/dina/scripts/transOutput.pl $soap_file $res_num";
-            `$cmdt`;
-            print "$cmdt\n";
-          }
-        }
         chdir "..";
 
 

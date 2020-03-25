@@ -10,13 +10,15 @@ my $pd_home = "/cs/staff/dina/projects2/PatchDock/";
 my $imp_home = "/cs/labs/dina/dina/libs/imp_fast/";
 
 if ($#ARGV < 0) {
-  print "Usage: dockXL.pl <antigen_pdb> <folder1> <folder2>...\n";
+  print "Usage: dockXL.pl <antigen_pdb> <xlinksThr> <folder1> <folder2>...\n";
   exit;
 }
 
 my $antigen = $ARGV[0];
 my $antigenPDB = basename($antigen);
-for(my $i=1; $i<$#ARGV+1; $i++) {
+my $xlinksThr = $ARGV[1];
+
+for(my $i=2; $i<$#ARGV+1; $i++) {
   my $dirname = $ARGV[$i];
   `cp $antigen $dirname/`; # copy the antigen
   chdir $dirname;
@@ -32,10 +34,11 @@ for(my $i=1; $i<$#ARGV+1; $i++) {
 
     # set nanobody chain id to H
     my $cmd = "/cs/staff/dina/scripts/chainger.pl $loopfile ' ' 'H'";
-    print OUT "$cmd\n";
+    #print OUT "$cmd\n";
 
     # parameter file
-    $cmd = "$pd_home/buildParamsXlinksAA.pl $loopfile $antigenPDB 4.0 AA";
+    my $thr = $xlinksThr;
+    $cmd = "$pd_home/buildParamsXlinksAA.pl $loopfile $antigenPDB $thr 2.0";
     print OUT "$cmd\n";
     $cmd = "mv params.txt params$j.txt";
     print OUT "$cmd\n";
@@ -60,19 +63,25 @@ for(my $i=1; $i<$#ARGV+1; $i++) {
       print OUT "$cmd\n";
 
     }
+  }
 
-    my $best_xl_thr = `grep \"|\" xldocking?.res | grep -v rmsd | cut -d '|' -f13 | sort | tail -n1`;
-    chomp $best_xl_thr;
-    print $best_xl_thr;
-    $cmd = "$pd_home/PatchDockOut2TransXLthr.pl xldocking$j.res $best_xl_thr > best_trans$j";
+
+  my $best_xl_thr = `grep \"|\" xldocking0.res xldocking1.res xldocking2.res xldocking3.res xldocking4.res | grep -v rmsd | cut -d '|' -f13 | sort | tail -n1`;
+  chomp $best_xl_thr;
+  print $best_xl_thr;
+
+  for (my $j=0; $j < 5; $j++) {
+    my $loopfile = "nb_loop_" . $j . ".pdb";
+    my $cmd = "$pd_home/PatchDockOut2TransXLthr.pl xldocking$j.res $best_xl_thr > best_trans$j";
     print OUT "$cmd\n";
+    #`$cmd`;
     $cmd = "$imp_home/setup_environment.sh $imp_home/bin/soap_score $antigenPDB $loopfile best_trans$j -o best_xlsoap_score$j.res";
     print OUT "$cmd\n";
-
+    #`$cmd`;
   }
 
   close OUT;
 
-  `sbatch --time=48:0:0 dscript.sh`;
+  `sbatch --time=8:0:0 dscript.sh`;
   chdir "..";
 }
