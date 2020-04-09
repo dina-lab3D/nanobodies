@@ -66,7 +66,7 @@ while(<DATA>) {
           `$cmd`;
            $job_counter++;
           my $hours3 = 3600*3;
-          if($job_counter > 500) { $job_counter = 0; sleep($hours3); }
+          if($job_counter > 1000) { $job_counter = 0; sleep($hours3); }
 
       } else {
           print "Docking done $dirname\n";
@@ -110,7 +110,7 @@ sub writeFrameFile {
     $cdr3_start +=1;
 
     open OUT, ">myframe";
-    for(my $i=1; $i<$cdr1_start-3; $i++) { print OUT "$i H\n"; }
+    for(my $i=8; $i<$cdr1_start-3; $i++) { print OUT "$i H\n"; }
     for(my $i=$cdr1_end+3; $i<$cdr2_start-3; $i++) { print OUT "$i H\n"; }
     for(my $i=$cdr2_end+3; $i<$cdr3_start-3; $i++) { print OUT "$i H\n"; }
     for(my $i=$cdr3_end+3; $i<length($sequence); $i++) { print OUT "$i H\n"; }
