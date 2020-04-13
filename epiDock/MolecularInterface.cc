@@ -63,13 +63,16 @@ void MolecularInterface::getReceptorInterfaceResidues(std::vector<double>& resid
   if(residues.size() == 0) {
     residues.insert(residues.begin(), mol1_.numberOfRes(), 0);
   }
+  //std::cout <<  mol1_.numberOfRes() << std::endl;
   for(unsigned int resIndex=0; resIndex<mol1_.numberOfRes(); resIndex++) {
     if(mol1ResidueInterface_.isInterface(resIndex)) {
-      //int atomIndex = mol1_.getFirstAtomEntryForResEntry(resIndex);
-      //int resIndex = mol1_[atomIndex].residueSequenceID();
+      int atomIndex = mol1_.getFirstAtomEntryForResEntry(resIndex);
+      int residueIndex = mol1_[atomIndex].residueIndex();
+      //std::cout << resIndex << ":" << residueIndex  << " ";//<< std::endl;
       residues[resIndex]++;
     }
   }
+  //  std::cout << std::endl;
 }
 
 

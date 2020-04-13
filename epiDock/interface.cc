@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
     ChemMolecule mol1, mol2;
 
     std::ifstream molFile1(argv[i]);
-    mol1.readAllPDBfile(molFile1, PDB::ChainSelector(chains1));
+    mol1.readPDBfile(molFile1, PDB::ChainSelector(chains1));
     molFile1.close();
     std::ifstream molFile2(argv[i]);
     mol2.readAllPDBfile(molFile2, PDB::ChainSelector(chains2));
@@ -56,10 +56,16 @@ int main(int argc, char **argv) {
     molInterface.getReceptorInterfaceResidues(epitope);
   }
 
+  std::cout << epitope.size() << std::endl;
   std::ofstream ofile("epi.csv");
-  int shift = epitope.size()/2;
-  for(int i=0; i<shift; i++) {
-    ofile << epitope[i]+epitope[i+shift] << ", ";
+  int numberOfChains  = 1;// TODO: change back to 1, add as option later
+  int range = epitope.size()/numberOfChains;
+  for(int i=0; i<range; i++) {
+    int counter = epitope[i];// first chain
+    for(int chain = 1; chain < numberOfChains; chain++) {
+      counter += epitope[i+range*chain];
+    }
+    ofile << counter << ", ";
   }
   ofile << std::endl;
   ofile.close();

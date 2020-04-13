@@ -56,6 +56,14 @@ $soap /= $counter;
 print "SOAP = $soap\n";
 $cmd = "$home/../epiDock/interface AB H 6.0 $res_files";
 `$cmd`;
+
+my $xlnum = `wc -l dist_constraints | awk '{ print \$1 }'`; chomp $xlnum;
+my $solnum = `wc best_trans0 best_trans1 best_trans2 best_trans3 best_trans4 | tail -n1 | awk '{ print \$1 }'`;
+chomp $solnum;
+my $best_xl_thr = `grep \"|\" xldocking0.res xldocking1.res xldocking2.res xldocking3.res xldocking4.res | grep -v rmsd | cut -d '|' -f13 | sort | tail -n1`;
+chomp $best_xl_thr;
+my $cdr3length = `wc -l cdrs3 | awk '{ print \$1 }'`; chomp $cdr3length;
+
 open OUT, ">stat.csv";
-print OUT "$folder_name , $precision, $soap\n";
+print OUT "$folder_name , $cdr3length, $solnum, $xlnum, $best_xl_thr, $precision, $soap\n";
 close OUT;
