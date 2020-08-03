@@ -7,7 +7,7 @@ use Cwd qw(cwd);
 
 my $home = "$FindBin::Bin";
 my $pd_home = "/cs/staff/dina/projects2/PatchDock/";
-my $imp_home = "/cs/labs/dina/dina/libs/imp_fast/";
+my $imp_home = "/cs/labs/dina/dina/libs/imp_build/";
 
 if ($#ARGV < 0) {
   print "Usage: dockXL.pl <antigen_pdb> <xlinksThr> <folder1> <folder2>...\n";
@@ -27,14 +27,19 @@ for(my $i=2; $i<$#ARGV+1; $i++) {
   my $currdir = cwd;
   open OUT, ">dscript.sh";
   print OUT "#!/bin/tcsh\n";
+
+  print OUT "module load opencv\n";
+  print OUT "setenv CGAL_DIR /cs/labs/dina/dina/libs/CGAL\n";
+
+
   print OUT "cd $currdir\n";
 
-  for (my $j=0; $j < 5; $j++) {
+  for (my $j=0; $j < 10; $j++) {
     my $loopfile = "nb_loop_" . $j . ".pdb";
 
     # set nanobody chain id to H
     my $cmd = "/cs/staff/dina/scripts/chainger.pl $loopfile ' ' 'H'";
-    #print OUT "$cmd\n";
+    print OUT "$cmd\n";
 
     # parameter file
     my $thr = $xlinksThr;
@@ -66,11 +71,11 @@ for(my $i=2; $i<$#ARGV+1; $i++) {
   }
 
 
-  my $best_xl_thr = `grep \"|\" xldocking0.res xldocking1.res xldocking2.res xldocking3.res xldocking4.res | grep -v rmsd | cut -d '|' -f13 | sort | tail -n1`;
+  my $best_xl_thr = `grep \"|\" xldocking0.res xldocking1.res xldocking2.res xldocking3.res xldocking4.res xldocking5.res xldocking6.res xldocking7.res xldocking8.res xldocking9.res| grep -v rmsd | cut -d '|' -f13 | sort | tail -n1`;
   chomp $best_xl_thr;
   print $best_xl_thr;
 
-  for (my $j=0; $j < 5; $j++) {
+  for (my $j=0; $j < 10; $j++) {
     my $loopfile = "nb_loop_" . $j . ".pdb";
     my $cmd = "$pd_home/PatchDockOut2TransXLthr.pl xldocking$j.res $best_xl_thr > best_trans$j";
     print OUT "$cmd\n";

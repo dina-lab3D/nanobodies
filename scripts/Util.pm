@@ -56,4 +56,11 @@ sub get_counter_string_limit {
   return $seq_counter_string;
 }
 
+sub trimExtension {
+    my $str = shift;
+    $str =~ s/\.[^.]+$//;
+    return $str;
+}
+
+
 1;

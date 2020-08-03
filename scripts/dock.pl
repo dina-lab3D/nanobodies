@@ -7,7 +7,7 @@ use Cwd qw(cwd);
 
 my $home = "$FindBin::Bin";
 my $pd_home = "/cs/staff/dina/projects2/PatchDock/";
-my $imp_home = "/cs/labs/dina/dina/libs/imp_fast/";
+my $imp_home = "/cs/labs/dina/dina/libs/imp_cluster/";
 
 if ($#ARGV != 0) {
   print "Usage: dock.pl <antigen_pdb>\n";
