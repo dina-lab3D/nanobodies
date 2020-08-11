@@ -60,12 +60,14 @@ int main(int argc, char **argv) {
   std::ofstream ofile("epi.csv");
   int numberOfChains  = 1;// TODO: change back to 1, add as option later
   int range = epitope.size()/numberOfChains;
+  int molNum = argc -4;
   for(int i=0; i<range; i++) {
     int counter = epitope[i];// first chain
     for(int chain = 1; chain < numberOfChains; chain++) {
       counter += epitope[i+range*chain];
     }
-    ofile << counter << ", ";
+    float ratio = (float)counter/molNum;
+    ofile << ratio << ", ";
   }
   ofile << std::endl;
   ofile.close();
