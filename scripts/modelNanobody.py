@@ -8,7 +8,7 @@ from Bio import SeqIO
 import cdr_annotation
 
 import subprocess
-import os,sys
+import os,sys,getopt
 
 current_home = os.path.dirname(sys.argv[0])
 print (current_home)
@@ -48,14 +48,92 @@ def write_ali_file(sequence):
     f.write("*\n")
     f.close()
 
+# get template pdbs based on blast
+def get_templates(blast_file_name, num_templates = 10, filter = False):
+    count = 0
+    template_list = []
+
+    for line in open(blast_file_name):
+        if "Chain" in line and count <num_templates:
+            fields = line.split(' ')
+            fields2 = fields[0].split('_')
+            if(len(fields2[1]) > 1):
+                continue
+            template = fields2[0].lower() + fields2[1]
+
+            # ignore identical template
+            if filter:
+                score = int(line[70:77])
+                if(score > 200):
+                    print("skipping " + template + str(score))
+                    continue
+
+            template_list.append(template)
+
+            # get PDB file
+            pdb_name = template + ".pdb"
+            if os.path.isfile(pdb_name) :
+                print ("file exists",pdb_name)
+            else: # getPDB
+                template2 = fields2[0].lower() + ":" + fields2[1]
+                cmd = "/cs/staff/dina/scripts/getPDBChains.pl " + template2
+                print (cmd)
+                proc = subprocess.Popen(cmd, shell=True, stdout=sys.stdout, stderr=sys.stderr)
+                return_code = proc.wait()
+                if return_code != 0:
+                    print ("getPDBChains.pl subprocess failed with exit code " , return_code)
+
+            # also get the whole PDB
+            pdb_name = fields2[0].lower() + ".pdb"
+            if os.path.isfile(pdb_name) :
+                print ("file exists",pdb_name)
+            else: # getPDB
+                cmd = "/cs/staff/dina/scripts/getPDB.pl " + fields2[0].lower()
+                print (cmd)
+                proc = subprocess.Popen(cmd, shell=True, stdout=sys.stdout, stderr=sys.stderr)
+                return_code = proc.wait()
+                if return_code != 0:
+                    print ("getPDB.pl subprocess failed with exit code " , return_code)
+
+            count+=1
+    return template_list
 
 
 # modeling script
-if(len(sys.argv) != 2) :
-    print ("Please provide input fasta_file")
-    sys.exit(0)
+help_message = "modelNanobody.py <inputFastaFile> [-t ignores sim. seq.] [-m model#] [-l loop num]"
 
-fasta_file_name = sys.argv[1]
+# options defaults
+filter_similar_sequences = False
+model_num = 10
+loop_model_num = 100
+
+# parse options
+#try:
+opts, args = getopt.getopt(sys.argv[1:],'thm:l:', ['test', 'help','model_num=','loop_model_num='])
+print (opts)
+print (args)
+#except getopt.GetoptError:
+ #   print (help_message)
+  #  sys.exit(2)
+for opt, arg in opts:
+    if opt == '-h':
+        print (help_message)
+        sys.exit()
+    if opt in ("-t", "--test"):
+        filter_similar_sequences = True
+    if opt in ("-m", "--model_num"):
+        model_num = int(arg)
+    if opt in ("-l", "--loop_model_num"):
+        loop_model_num = int(arg)
+
+# get fasta file name
+if len (args) != 1:
+    print (help_message)
+    sys.exit()
+fasta_file_name = args[0]
+print ("Args: seq_file=" + fasta_file_name + " test_mode=" + str(filter_similar_sequences)
+       + " model_num=" + str(model_num) + " loop_model_num=" + str(loop_model_num))
+
 nb_sequence = get_sequence(fasta_file_name)
 nb_sequence_id = get_sequence_id(fasta_file_name)
 write_ali_file(nb_sequence)
@@ -66,49 +144,8 @@ write_ali_file(nb_sequence)
 # run blast and save top10 hits as templates
 run_blast(fasta_file_name)
 blast_file_name = fasta_file_name + ".blast"
-count = 0
-template_list = []
+template_list = get_templates(blast_file_name, filter=filter_similar_sequences)
 
-for line in open(blast_file_name):
-    if "Chain" in line and count <10:
-        fields = line.split(' ')
-        fields2 = fields[0].split('_')
-        if(len(fields2[1]) > 1):
-            continue
-        template = fields2[0].lower() + fields2[1]
-        # ignore identical template
-        if template in nb_sequence_id:
-            continue
-
-        template_list.append(template)
-
-        pdb_name = template + ".pdb"
-        if os.path.isfile(pdb_name) :
-            print ("file exists",pdb_name)
-        else: # getPDB
-            template2 = fields2[0].lower() + ":" + fields2[1]
-            cmd = "/cs/staff/dina/scripts/getPDBChains.pl " + template2
-            print (cmd)
-            proc = subprocess.Popen(cmd, shell=True, stdout=sys.stdout, stderr=sys.stderr)
-            return_code = proc.wait()
-            if return_code != 0:
-                print ("getPDBChains.pl subprocess failed with exit code " , return_code)
-
-        # also get the whole PDB
-        pdb_name = fields2[0].lower() + ".pdb"
-        if os.path.isfile(pdb_name) :
-            print ("file exists",pdb_name)
-        else: # getPDB
-            cmd = "/cs/staff/dina/scripts/getPDB.pl " + fields2[0].lower()
-            print (cmd)
-            proc = subprocess.Popen(cmd, shell=True, stdout=sys.stdout, stderr=sys.stderr)
-            return_code = proc.wait()
-            if return_code != 0:
-                print ("getPDB.pl subprocess failed with exit code " , return_code)
-
-        count+=1
-
-print (template_list)
 
 # align templates using modeller salign function
 log.verbose()
@@ -161,7 +198,6 @@ aln.write(file='nano-mult.ali', alignment_format='PIR')
 sp = soap_loop.Scorer()
 
 # build 10 models with modeller automodel
-model_num = 10
 a = automodel(env, alnfile='nano-mult.ali',
               knowns=template_list,
               sequence='NANO',assess_methods=(assess.DOPE,sp))
@@ -189,8 +225,6 @@ for n in range(1, model_num+1):
 print (best_model, best_score)
 
 # loop remodeling
-model_num = 100 # can generate more if needed
-
 # Create a new class based on 'loopmodel' so that we can redefine
 # select_loop_atoms (necessary)
 class MyLoop(loopmodel):
@@ -203,14 +237,15 @@ m = MyLoop(env,
            sequence='NANO')          # code of the target
 
 m.loop.starting_model= 1           # index of the first loop model
-m.loop.ending_model  = model_num   # index of the last loop model
+m.loop.ending_model  = loop_model_num   # index of the last loop model
 m.loop.md_level = refine.slow      # loop refinement method; this yields
                                    # models quickly but of low quality;
                                    # use refine.slow for better models
 m.make()
 
 # score models
-for n in range(1, 11):
+f = open("scores.txt", "w")
+for n in range(1, model_num+1):
     model_name = 'NANO.B999900%02d.pdb' % n
     mdl = complete_pdb(env, model_name)
     s = selection(mdl)   # all atom selection
@@ -224,10 +259,10 @@ for n in range(1, 11):
         rmsd_out = subprocess.check_output(cmd, shell=True)
         rmsd = float(rmsd_out.strip())
     print ("MODEL ", model_name, " dope-score: ", dope_score, " soap-score: ", soap_score, " rmsd: ", rmsd)
-    f.write("MODEL "+ model_name + " dope-score: " + str(dope_score) + " soap-score: " + str(soap_score) + " rmsd: " + str(rmsd))
+    f.write("MODEL "+ model_name + " dope-score: " + str(dope_score) + " soap-score: " + str(soap_score) + " rmsd: " + str(rmsd)+ "\n")
 
     # score loops
-for i in range(1, model_num+1):
+for i in range(1, loop_model_num+1):
     # read model file
     code = "NANO.BL%04d0001.pdb" % i
     mdl = complete_pdb(env, code)
@@ -242,6 +277,7 @@ for i in range(1, model_num+1):
         rmsd_out = subprocess.check_output(cmd, shell=True)
         rmsd = float(rmsd_out.strip())
     print ("LOOP ", code, " dope-score: ", dope_score, " soap-score: ", soap_score, " rmsd: ", rmsd)
+    f.write("LOOP "+ code + " dope-score: " + str(dope_score) + " soap-score: " + str(soap_score) + " rmsd: " + str(rmsd) + "\n")
     file_to_remove = "NANO.DL%04d0001" % i
     os.remove(file_to_remove)
 
