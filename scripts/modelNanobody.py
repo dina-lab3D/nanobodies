@@ -112,9 +112,7 @@ loop_model_num = 100
 opts, args = getopt.getopt(sys.argv[1:],'thm:l:', ['test', 'help','model_num=','loop_model_num='])
 print (opts)
 print (args)
-#except getopt.GetoptError:
- #   print (help_message)
-  #  sys.exit(2)
+
 for opt, arg in opts:
     if opt == '-h':
         print (help_message)
