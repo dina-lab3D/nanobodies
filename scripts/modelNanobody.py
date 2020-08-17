@@ -14,6 +14,7 @@ current_home = os.path.dirname(sys.argv[0])
 print (current_home)
 
 blast_home = "/cs/labs/dina/dina/software/ncbi-blast-2.8.1+/bin/";
+rmsd_prog = "/cs/staff/dina/utils/rmsd/";
 
 # runs blast
 def run_blast(filename):
@@ -253,7 +254,7 @@ for n in range(1, model_num+1):
                           normalize_profile=True, smoothing_window=15)
     rmsd = 0.0
     if os.path.isfile("ref.pdb"):
-        cmd = "rmsd -t ref.pdb " + model_name + " | tail -n1 "
+        cmd = rmsd_prog + " -t ref.pdb " + model_name + " | tail -n1 "
         rmsd_out = subprocess.check_output(cmd, shell=True)
         rmsd = float(rmsd_out.strip())
     print ("MODEL ", model_name, " dope-score: ", dope_score, " soap-score: ", soap_score, " rmsd: ", rmsd)
@@ -271,7 +272,7 @@ for i in range(1, loop_model_num+1):
                           normalize_profile=True, smoothing_window=15)
     rmsd = 0.0
     if os.path.isfile("ref.pdb"):
-        cmd = "rmsd -t ref.pdb " + code + " | tail -n1 "
+        cmd = rmsd_prog + " -t ref.pdb " + code + " | tail -n1 "
         rmsd_out = subprocess.check_output(cmd, shell=True)
         rmsd = float(rmsd_out.strip())
     print ("LOOP ", code, " dope-score: ", dope_score, " soap-score: ", soap_score, " rmsd: ", rmsd)
