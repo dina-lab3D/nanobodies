@@ -2,9 +2,18 @@ import os
 import subprocess
 import sys
 
+FLAGS = "-t"
+
 
 def main(abs_path_folder, file_name):
-
+    """
+    runs the modelNanobody.py program on the file_name (pdb file) after 
+    creating fasta file for chain H. all the files are saved in the folder
+    path abs_path_folder
+    :param abs_path_folder: the folder path of the file_name 
+    :param file_name: the name of the pdb file (nanobody)
+    :return: None
+    """
     folder_name = file_name.split(".")[0]
     # create nanobody folder
     if not os.path.isdir(abs_path_folder):
@@ -23,12 +32,11 @@ def main(abs_path_folder, file_name):
 
     # run the script that creates the loops models
     os.chdir(abs_path_folder)
-
-    subprocess.run("~dina/modeller9.18/bin/modpy.sh python /cs/labs/dina/tomer.cohen13/nanobodies/scripts/modelNanobody.py -t -l 1000" + abs_path_folder +
+    subprocess.run("~dina/modeller9.18/bin/modpy.sh python /cs/labs/dina/tomer.cohen13/nanobodies/scripts/modelNanobody.py " + FLAGS + " " + abs_path_folder +
                    "/" + folder_name + ".fa", shell=True)
 
 
-
-
 if __name__ == '__main__':
+    # sys.argv[1] = folder path
+    # sys.argv[2] = pdb file name
     main(sys.argv[1], sys.argv[2])
