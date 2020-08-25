@@ -23,9 +23,13 @@ if __name__ == '__main__':
 
     pwd = sys.argv[1]  # working directory
     for file in os.listdir(pwd):
+        
         if file.endswith('.pdb'):  # goes over all pdb files in that directory
+            current_folder_path = pwd + "/" + file.split(".")[0]
             script_name = pwd + "/" + file + ".sh"  # script file
             with open(script_name, 'w') as f:
-                line = INTRO + pwd + "/" + file.split(".")[0] + " " + file 
+                line = INTRO + pwd + "/" + file.split(".")[0] + " " + file
+                
                 f.write(line)
+         
             subprocess.run("sbatch " + script_name, shell=True)  # sends script to the cluster
