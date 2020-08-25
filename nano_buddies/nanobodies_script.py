@@ -16,11 +16,14 @@ def main(abs_path_folder, file_name):
     """
     folder_name = file_name.split(".")[0]
     # create nanobody folder
-    if not os.path.isdir(abs_path_folder):
-        os.mkdir(abs_path_folder)
-    os.chdir(abs_path_folder)
+
+    # if not os.path.isdir(abs_path_folder):
+    #     os.mkdir(abs_path_folder)
+    # os.chdir(abs_path_folder)
 
     # get chain H (antibody)
+
+    os.chdir(abs_path_folder)
     subprocess.run("~dina/utils/getChain.Linux H " + abs_path_folder + ".pdb" + " > " + abs_path_folder + "/ref.pdb", shell=True)
 
     # move nanobody to its folder
