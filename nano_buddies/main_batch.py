@@ -4,10 +4,10 @@ import os
 import subprocess
 
 # max memory for each batch
-MEMORY = "4000m"
+MEMORY = "8000m"
 
 # max time for each batch
-TIME = "24:0:0"
+TIME = "48:0:0"
 
 # the begining of the script for cluster
 INTRO = "#!/bin/tcsh\n" \
