@@ -4,10 +4,10 @@ import os
 import subprocess
 
 # max memory for each batch
-MEMORY = "8000m"
+MEMORY = "10000m"
 
 # max time for each batch
-TIME = "8:0:0"
+TIME = "72:0:0"
 
 SCRIPT_PATH = "/cs/labs/dina/tomer.cohen13/nanobodies/nano_buddies/nanobodies_script.py"
 
@@ -33,12 +33,15 @@ if __name__ == '__main__':
                 os.mkdir(current_folder_path)
 
             os.chdir(current_folder_path)
-            script_name = pwd + "/" + file.split(".")[0] + "/" + file + ".sh"  # script file
+            script_name = file + ".sh"  # script file
             with open(script_name, 'w') as f:
                 #line = INTRO + pwd + "/" + file.split(".")[0] + " " + file
                 f.write(INTRO)
-                line = "cd " + current_folder_path + "\n"
+                line = "cd " + os.getcwd() + "\n"
                 f.write(line)
-                line = "python3 " + SCRIPT_PATH + " " + current_folder_path + " " + file
+                line = "python3 " + SCRIPT_PATH + " " + os.getcwd() + " " + file
                 f.write(line)
             subprocess.run("sbatch " + script_name, shell=True)  # sends script to the cluster
+            os.chdir("../..")
+
+

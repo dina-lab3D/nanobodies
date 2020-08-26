@@ -2,7 +2,7 @@ import os
 import subprocess
 import sys
 
-FLAGS = "-t"
+FLAGS = "-t -l 1000"
 
 
 def main(abs_path_folder, file_name):
@@ -23,7 +23,6 @@ def main(abs_path_folder, file_name):
 
     # get chain H (antibody)
 
-    os.chdir(abs_path_folder)
     subprocess.run("~dina/utils/getChain.Linux H " + abs_path_folder + ".pdb" + " > " + abs_path_folder + "/ref.pdb", shell=True)
 
     # move nanobody to its folder
@@ -34,9 +33,12 @@ def main(abs_path_folder, file_name):
                    shell=True)
 
     # run the script that creates the loops models
-    os.chdir(abs_path_folder)
+
     subprocess.run("~dina/modeller9.18/bin/modpy.sh python /cs/labs/dina/tomer.cohen13/nanobodies/scripts/modelNanobody.py " + FLAGS + " " + abs_path_folder +
                    "/" + folder_name + ".fa", shell=True)
+
+    # move the pdb file
+    subprocess.run("mv " + os.path.join(abs_path_folder, file_name) + " " + abs_path_folder, shell=True)
 
 
 if __name__ == '__main__':
