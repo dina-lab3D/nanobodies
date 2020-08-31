@@ -2,16 +2,24 @@
 import argparse
 import os
 import subprocess
-pd_home = "/cs/staff/dina/projects2/PatchDock/"
-imp_home = "/cs/labs/dina/dina/libs/imp_cluster/"
+import re
+
 
 # max memory for each batch
 MEMORY = "10000m"
 
 # max time for each batch
-TIME = "72:0:0"
+TIME = "8:0:0"
 
 SCRIPT_PATH = "/cs/labs/dina/tomer.cohen13/nanobodies/nano_buddies/nanobodies_script.py"
+BUILD_PARAM = "/cs/staff/dina/projects2/PatchDock/buildParams.pl "
+CHAIN_SELECTOR = "~dina/scripts/chainSelector.pl "
+GET_CHAIN = "~dina/utils/getChain.Linux "
+PATCH_DOCK = "/cs/staff/dina/projects2/PatchDock/patch_dock.Linux "
+PATCH_DOCK_TRANS = "/cs/staff/dina/projects2/PatchDock/PatchDockOut2Trans.pl "
+SETUP_ENV = "/cs/labs/dina/dina/libs/imp_build/setup_environment.sh "
+SOAP_SCORE = "/cs/labs/dina/dina/libs/imp_build/bin/soap_score "
+RMSD_ALIGN = "/cs/staff/dina/scripts/alignRMSD.pl "
 
 # the begining of the script for cluster
 INTRO = "#!/bin/tcsh\n" \
@@ -20,65 +28,76 @@ INTRO = "#!/bin/tcsh\n" \
         "#SBATCH --time=" + TIME + "\n"
 
 
-def main(directory):
-
+def dock_pdb(directory):
+    """
+    creates a script and runs the Patch_Dock algorithm on all the loop/model pdb files in the directory
+    :param directory: pdb directory (after running NanobodySelector.py on the folder)
+    :return: None
+    """
     os.chdir(directory)
-    antigen = os.path.basename(directory)
+    antigen_pdb = os.path.basename(directory) + ".pdb"
 
-    antigenPDB = antigen + ".pdb"
-
-    # my $curr = cwd;
-    # `cp $antigen .`;
-    antigen_chains = subprocess.run("~dina/scripts/chainSelector.pl " + antigenPDB, shell=True,
+    #  gets a string containing the chains letters corresponding to the antigen chains (all but H)
+    antigen_chains = subprocess.run(CHAIN_SELECTOR + antigen_pdb, shell=True,
                                     capture_output=True, universal_newlines=True).stdout.replace("H", "").replace(" ", "").replace("\n", "")
+    #  build antigen pdb
+    subprocess.run(GET_CHAIN + antigen_chains + " " + antigen_pdb + " > " + "antigen.pdb", shell=True)
 
-    subprocess.run("~dina/utils/getChain.Linux " + antigen_chains + " " + antigenPDB + " > " + "antigen.pdb", shell=True)
+    #  write docking script
+    with open("dock_script.sh", 'w') as script_file:
+        script_file.write(INTRO)
+        script_file.write("cd " + os.getcwd() + "\n")
+        script_file.write("module load opencv\nsetenv CGAL_DIR /cs/labs/dina/dina/libs/CGAL\n")
+        for pdb_file in os.listdir(os.getcwd()):
+            #  loop/ model nanobody pdb
+            if (pdb_file.startswith("model") or pdb_file.startswith("loop")) and pdb_file.endswith(".pdb"):
+                pdb_name = pdb_file.split(".")[0]
 
-# with open("dock_script.sh", 'w') as script_file:
-#
-#         script_file.write(INTRO)
-#         script_file.write("cd " + os.getcwd())
-#
-#     for (my $j=0; $j < 5; $j++) {
-#         my $loopfile = "nb_loop_" . $j . ".pdb";
-#
-#     # set nanobody chain id to H
-#     my $cmd = "/cs/staff/dina/scripts/chainger.pl $loopfile ' ' 'H'";
-#     print OUT "$cmd\n";
-#
-#     # parameter file
-#     $cmd = "$pd_home/buildParams.pl $loopfile $antigenPDB 4.0 AA";
-#     print OUT "$cmd\n";
-#     $cmd = "mv params.txt params$j.txt";
-#     print OUT "$cmd\n";
-#     $cmd = "cp mycdrs3 cdrs3";
-#     print OUT "$cmd\n";
-#     $cmd = "cp myframe frame";
-#     print OUT "$cmd\n";
-#
-#     # patchdock
-#     if(not (-e "docking$j.res" and (-s "docking$j.res" > 1000))) {
-#     $cmd = "$pd_home/patch_dock.Linux params$j.txt docking$j.res";
-#     print OUT "$cmd\n";
-#     $cmd = "$pd_home/PatchDockOut2Trans.pl docking$j.res > trans$j";
-#     print OUT "$cmd\n";
-#     }
-#
-#     # soap score
-#     if(not (-e "soap_score$j.res" and (-s "soap_score$j.res" > 200))) {
-#     $cmd = "$imp_home/setup_environment.sh $imp_home/bin/soap_score $antigenPDB $loopfile trans$j -o soap_score$j.res";
-#     print OUT "$cmd\n";
-#     }
-#     }
-#
-#     close OUT;
-#
-#     `sbatch --time=8:0:0 dscript.sh`;
+                #  align to ref.pdb to get correct rmsd
+                script_file.write(RMSD_ALIGN + "ref.pdb " + pdb_file + "\n")
+                tr_pdb_file = pdb_name + "_tr.pdb"
+
+                #  parameters list
+                script_file.write(BUILD_PARAM + tr_pdb_file + " antigen.pdb 4.0 AA\n")
+
+                #  change name parameters list
+                params_name = "params_" + pdb_name + ".txt"
+                script_file.write("mv params.txt " + params_name + "\n")
+
+                #  TODO
+                script_file.write("cp mycdrs3 cdrs3" + "\n")
+                #  TODO
+                script_file.write("cp myframe frame" + "\n")
+
+                # Docking
+                if True:  #  TODO
+                    docking_name = "docking_" + pdb_name + ".res"
+                    script_file.write(PATCH_DOCK + params_name + " " + docking_name + "\n")
+                    trans_name = "trans_" + pdb_name
+                    script_file.write(PATCH_DOCK_TRANS + docking_name + " > " + trans_name + "\n")
+
+                #  soap scores
+                if True:  #  TODO
+                    script_file.write(SETUP_ENV + SOAP_SCORE + "antigen.pdb " + tr_pdb_file + " " + trans_name + " -o soap_score_" + pdb_name + ".res\n")
+    #  send the script to the cluster
+    subprocess.run("sbatch dock_script.sh", shell=True)
+
+
+
+    os.chdir("..")
+
 
 if __name__ == '__main__':
-
+    """
+    runs the dock_pdb() function on all the pdbs folders in the given directory.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("directory", help="directory path containing the pdb directories")
     args = parser.parse_args()
-    main(args.directory)
+    os.chdir(args.directory)
+
+    for directory in os.listdir(args.directory):
+        #  if the folder is pdb folder
+        if os.path.isdir(directory) and re.fullmatch("[a-zA-Z0-9]{4}_[0-9]", directory):
+            dock_pdb(os.path.join(args.directory, directory))
 

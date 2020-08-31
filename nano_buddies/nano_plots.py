@@ -13,7 +13,7 @@ FULL_COL = ["type", "name", "dope_score", "soap_score", "rmsd", "length"]
 LENGTH_PATH = "/cs/labs/dina/tomer.cohen13/lengths"
 LENGTH_FILE = "nano_length.txt"
 
-PLOTS_PATH = "/cs/labs/dina/tomer.cohen13/nanobodies/nano_buddies/plots"
+PLOTS_PATH = "/cs/labs/dina/tomer.cohen13/nanobodies/nano_buddies/plots1000"
 
 
 TOP_SCORES_N = 10
