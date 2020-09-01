@@ -20,7 +20,7 @@ PATCH_DOCK_TRANS = "/cs/staff/dina/projects2/PatchDock/PatchDockOut2Trans.pl "
 SETUP_ENV = "/cs/labs/dina/dina/libs/imp_build/setup_environment.sh "
 SOAP_SCORE = "/cs/labs/dina/dina/libs/imp_build/bin/soap_score "
 RMSD_ALIGN = "/cs/staff/dina/scripts/alignRMSD.pl "
-COMBINED_REF = "/cs/labs/dina/tomer.cohen13/nanobodies/nano_buddies/plots1000/combine_refs.py "
+COMBINED_REF = "/cs/labs/dina/tomer.cohen13/nanobodies/nano_buddies/combine_refs.py "
 
 # the begining of the script for cluster
 INTRO = "#!/bin/tcsh\n" \
