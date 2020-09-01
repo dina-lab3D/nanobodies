@@ -20,6 +20,7 @@ PATCH_DOCK_TRANS = "/cs/staff/dina/projects2/PatchDock/PatchDockOut2Trans.pl "
 SETUP_ENV = "/cs/labs/dina/dina/libs/imp_build/setup_environment.sh "
 SOAP_SCORE = "/cs/labs/dina/dina/libs/imp_build/bin/soap_score "
 RMSD_ALIGN = "/cs/staff/dina/scripts/alignRMSD.pl "
+COMBINED_REF = "/cs/labs/dina/tomer.cohen13/nanobodies/nano_buddies/plots1000/combine_refs.py "
 
 # the begining of the script for cluster
 INTRO = "#!/bin/tcsh\n" \
@@ -50,7 +51,7 @@ def dock_pdb(directory):
         script_file.write("module load opencv\nsetenv CGAL_DIR /cs/labs/dina/dina/libs/CGAL\n")
         for pdb_file in os.listdir(os.getcwd()):
             #  loop/ model nanobody pdb
-            if (pdb_file.startswith("model") or pdb_file.startswith("loop")) and pdb_file.endswith(".pdb"):
+            if (pdb_file.startswith("model") or pdb_file.startswith("loop")) and pdb_file.endswith(".pdb") and "tr" not in pdb_file:
                 pdb_name = pdb_file.split(".")[0]
 
                 #  align to ref.pdb to get correct rmsd
@@ -79,11 +80,12 @@ def dock_pdb(directory):
                 #  soap scores
                 if True:  #  TODO
                     script_file.write(SETUP_ENV + SOAP_SCORE + "antigen.pdb " + tr_pdb_file + " " + trans_name + " -o soap_score_" + pdb_name + ".res\n")
+                    script_file.write(SETUP_ENV + SOAP_SCORE + "antigen.pdb " + tr_pdb_file + " -o no_trans_soap_score_" + pdb_name + ".res\n")
+
+    script_file.write(SETUP_ENV + SOAP_SCORE + "antigen.pdb ref.pdb -o soap_score_ref.res\n")
     #  send the script to the cluster
+    script_file.write("python3 " + COMBINED_REF + " " + os.getcwd())
     subprocess.run("sbatch dock_script.sh", shell=True)
-
-
-
     os.chdir("..")
 
 
