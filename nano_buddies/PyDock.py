@@ -21,6 +21,7 @@ SETUP_ENV = "/cs/labs/dina/dina/libs/imp_build/setup_environment.sh "
 SOAP_SCORE = "/cs/labs/dina/dina/libs/imp_build/bin/soap_score "
 RMSD_ALIGN = "/cs/staff/dina/scripts/alignRMSD.pl "
 COMBINED_REF = "/cs/labs/dina/tomer.cohen13/nanobodies/nano_buddies/combine_refs.py "
+CLUSTER = "/cs/staff/dina/projects2/PatchDock/interface_cluster.linux "
 
 # the begining of the script for cluster
 INTRO = "#!/bin/tcsh\n" \
@@ -49,6 +50,8 @@ def dock_pdb(directory):
         script_file.write(INTRO)
         script_file.write("cd " + os.getcwd() + "\n")
         script_file.write("module load opencv\nsetenv CGAL_DIR /cs/labs/dina/dina/libs/CGAL\n")
+        script_file.write("rm cat_soap_scores.res\n")  # remove cat_soap_scores.res if already exists (so we can append later)
+        script_file.write("echo -n > cat_soap_scores.res\n")
         for pdb_file in os.listdir(os.getcwd()):
             #  loop/ model nanobody pdb
             if (pdb_file.startswith("model") or pdb_file.startswith("loop")) and pdb_file.endswith(".pdb") and "tr" not in pdb_file:
@@ -81,10 +84,13 @@ def dock_pdb(directory):
                 if True:  #  TODO
                     script_file.write(SETUP_ENV + SOAP_SCORE + "antigen.pdb " + tr_pdb_file + " " + trans_name + " -o soap_score_" + pdb_name + ".res\n")
                     script_file.write(SETUP_ENV + SOAP_SCORE + "antigen.pdb " + tr_pdb_file + " -o no_trans_soap_score_" + pdb_name + ".res\n")
+                    script_file.write("grep \"|\" soap_score_" + pdb_name + ".res | grep -v SOAP | cut -d '|' -f1,2,7 >> cat_soap_scores.res\n")
 
     script_file.write(SETUP_ENV + SOAP_SCORE + "antigen.pdb ref.pdb -o soap_score_ref.res\n")
-    #  send the script to the cluster
     script_file.write("python3 " + COMBINED_REF + " " + os.getcwd())
+    script_file.write(CLUSTER + " -f antigen.pdb ref.pdb dock_data.csv 4 soap_score_cluster.res\n")
+
+    #  send the script to the cluster
     subprocess.run("sbatch dock_script.sh", shell=True)
     os.chdir("..")
 

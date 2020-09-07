@@ -21,5 +21,5 @@ if __name__ == '__main__':
             scores.append(soap_score[0])
             os.remove(file)
     df = pd.DataFrame({"name": names, "soap_score": scores})
-    df.to_csv("ref_scores.csv", index=False, header=False)
+    df.to_csv("ref_scores.csv", index=False, header=True)
     os.chdir("..")
