@@ -27,5 +27,6 @@ if __name__ == '__main__':
     for directory in tqdm(os.listdir(args.directory)):
         #  if the folder is pdb folder
         if os.path.isdir(directory) and re.fullmatch("[a-zA-Z0-9]{4}_[0-9]", directory):
+            print(directory)
             cluster(os.path.join(args.directory, directory))
 

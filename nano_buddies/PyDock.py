@@ -20,7 +20,7 @@ PATCH_DOCK_TRANS = "/cs/staff/dina/projects2/PatchDock/PatchDockOut2Trans.pl "
 SETUP_ENV = "/cs/labs/dina/dina/libs/imp_build/setup_environment.sh "
 SOAP_SCORE = "/cs/labs/dina/dina/libs/imp_build/bin/soap_score "
 RMSD_ALIGN = "/cs/staff/dina/scripts/alignRMSD.pl "
-COMBINED_REF = "/cs/labs/dina/tomer.cohen13/nanobodies/nano_buddies/combine_refs.py "
+DOCK_DATA_MAKER = "/cs/labs/dina/tomer.cohen13/nanobodies/nano_buddies/DockDataMaker.py "
 CLUSTER = "/cs/staff/dina/projects2/PatchDock/interface_cluster.linux "
 
 # the begining of the script for cluster
@@ -87,7 +87,7 @@ def dock_pdb(directory):
                     script_file.write("grep \"|\" soap_score_" + pdb_name + ".res | grep -v SOAP | cut -d '|' -f1,2,7 >> cat_soap_scores.res\n")
 
     script_file.write(SETUP_ENV + SOAP_SCORE + "antigen.pdb ref.pdb -o soap_score_ref.res\n")
-    script_file.write("python3 " + COMBINED_REF + " " + os.getcwd())
+    script_file.write("python3 " + DOCK_DATA_MAKER + " " + os.getcwd())
     script_file.write(CLUSTER + " -f antigen.pdb ref.pdb dock_data.csv 4 soap_score_cluster.res\n")
 
     #  send the script to the cluster
