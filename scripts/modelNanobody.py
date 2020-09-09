@@ -14,10 +14,12 @@ import os,sys,getopt
 current_home = os.path.dirname(sys.argv[0])
 print (current_home)
 
+
 blast_home = "/cs/labs/dina/dina/software/ncbi-blast-2.8.1+/bin/"
 rmsd_prog = "/cs/staff/dina/utils/rmsd/"
 get_pdb = "/cs/staff/dina/scripts/getPDB.pl"
 get_pdb_chains = "/cs/staff/dina/scripts/getPDBChains.pl"
+
 
 # runs blast
 def run_blast(filename):
