@@ -5,6 +5,7 @@ from modeller.scripts import complete_pdb
 
 import Bio
 from Bio import SeqIO
+from Bio.Blast import NCBIXML
 import cdr_annotation
 
 import subprocess
@@ -13,14 +14,16 @@ import os,sys,getopt
 current_home = os.path.dirname(sys.argv[0])
 print (current_home)
 
-blast_home = "/cs/labs/dina/dina/software/ncbi-blast-2.8.1+/bin/";
-rmsd_prog = "/cs/staff/dina/utils/rmsd/";
+blast_home = "/cs/labs/dina/dina/software/ncbi-blast-2.8.1+/bin/"
+rmsd_prog = "/cs/staff/dina/utils/rmsd/"
+get_pdb = "/cs/staff/dina/scripts/getPDB.pl"
+get_pdb_chains = "/cs/staff/dina/scripts/getPDBChains.pl"
 
 # runs blast
 def run_blast(filename):
     out_file = filename + ".blast"
     blast_file = blast_home + "../pdbaa ";
-    cmd = blast_home + "blastp -db " + blast_file + " -query " + filename + " >& " + out_file
+    cmd = blast_home + "blastp -db " + blast_file + " -query " + filename + " -outfmt 5 >& " + out_file
     print (cmd)
     # Put stderr and stdout into pipes
     proc = subprocess.Popen(cmd, shell=True, stdout=sys.stdout, stderr=sys.stderr)
@@ -49,7 +52,65 @@ def write_ali_file(sequence):
     f.write("*\n")
     f.close()
 
-# get template pdbs based on blast
+# get num_templates template pdbs based on blast xml
+# returns a list of tuples (pdb_code, chain_id, template_start_res, template_end_res)
+def get_templates_blast_xml(blast_file_name, num_templates = 10, filter = False):
+    result = open(blast_file_name,"r")
+    records = NCBIXML.parse(result)
+    item = next(records)
+    counter = 0
+    returned_templates = []
+    for alignment in item.alignments:
+        for hsp in alignment.hsps:
+            if hsp.expect <0.01:
+                pdb = alignment.title.split("|")[3].lower()
+                chain = alignment.title.split("|")[4][0]
+                seq_identity = 100*hsp.identities/hsp.align_length
+                # get rid if numbering is off
+                if hsp.sbjct_start > 20:
+                    print("skipping " + pdb + chain + " " + str(seq_identity) + " " + str(hsp.sbjct_start))
+                    continue
+
+                # filter by 95% sequence identity
+                if filter and seq_identity > 95.0:
+                    print("skipping " + pdb + chain + " " + str(seq_identity))
+                    continue
+
+                if counter < num_templates:
+                    returned_templates.append((pdb, chain, hsp.sbjct_start, hsp.sbjct_end))
+
+                    # get PDB files - all + chain only
+                    pdb_name = pdb + ".pdb"
+                    chain_pdb = pdb + chain + ".pdb"
+                    if os.path.isfile(chain_pdb) :
+                        print ("file exists", chain_pdb)
+                    else: # getPDBChain
+                        cmd = get_pdb_chains + " " + pdb + ":" + chain
+                        print (cmd)
+                        proc = subprocess.Popen(cmd, shell=True, stdout=sys.stdout, stderr=sys.stderr)
+                        return_code = proc.wait()
+                        if return_code != 0:
+                            print ("getPDBChain.pl subprocess failed with exit code " , return_code)
+
+
+                    if os.path.isfile(pdb_name) :
+                        print ("file exists",pdb_name)
+                    else: # getPDB
+                        cmd = get_pdb + " " + pdb
+                        print (cmd)
+                        proc = subprocess.Popen(cmd, shell=True, stdout=sys.stdout, stderr=sys.stderr)
+                        return_code = proc.wait()
+                        if return_code != 0:
+                            print ("getPDB.pl subprocess failed with exit code " , return_code)
+
+                    counter+=1
+        if counter >= num_templates:
+            break
+
+    return returned_templates
+
+
+# get template pdbs based on blast (old version)
 def get_templates(blast_file_name, num_templates = 10, filter = False):
     count = 0
     template_list = []
@@ -143,7 +204,7 @@ write_ali_file(nb_sequence)
 # run blast and save top10 hits as templates
 run_blast(fasta_file_name)
 blast_file_name = fasta_file_name + ".blast"
-template_list = get_templates(blast_file_name, filter=filter_similar_sequences)
+template_list = get_templates_blast_xml(blast_file_name, filter = filter_similar_sequences)
 
 
 # align templates using modeller salign function
@@ -153,13 +214,20 @@ env.io.atom_files_directory = '.'
 env.libs.topology.read(file='$(LIB)/top_heav.lib')
 env.libs.parameters.read(file='$(LIB)/par.lib') # read parameters
 
+template_list2 = []
 aln = alignment(env)
-for (template_code) in (template_list):
-    code = template_code[:4]
-    chain = template_code[-1:]
-    print (code,chain)
-    mdl = model(env, file=template_code, model_segment=('FIRST:'+chain, '+120:'+chain))
-    aln.append_model(mdl, atom_files=code, align_codes=code+chain)
+for template in template_list:
+    print (template)
+    pdb_code = template[0]
+    chain = template[1]
+    #template_start = template[2]
+    #template_end = template[3]
+    code = pdb_code+chain
+    #start = str(template_start)+':' +chain
+    #end = str(template_end)+':'+ chain
+    mdl = model(env, file=code, model_segment=('FIRST:'+chain, '+120:'+chain))
+    aln.append_model(mdl, atom_files=pdb_code, align_codes=pdb_code+chain)
+    template_list2.append(code)
 
 for (weights, write_fit, whole) in (((1., 0., 0., 0., 1., 0.), False, True),
                                     ((1., 0.5, 1., 1., 1., 0.), False, True),
@@ -196,9 +264,11 @@ aln.write(file='nano-mult.ali', alignment_format='PIR')
 # scoring
 sp = soap_loop.Scorer()
 
+print ("TL",template_list2)
+
 # build 10 models with modeller automodel
 a = automodel(env, alnfile='nano-mult.ali',
-              knowns=template_list,
+              knowns=template_list2,
               sequence='NANO',assess_methods=(assess.DOPE,sp))
 a.starting_model = 1
 a.ending_model = model_num
@@ -281,11 +351,11 @@ for i in range(1, loop_model_num+1):
     os.remove(file_to_remove)
 
 # clean up templates
-for (template_code) in (template_list):
-    code = template_code[:4]
-    chain = template_code[-1:]
+for template in template_list:
+    code = template[0]
+    chain = template[1]
     pdb = code + '.pdb'
-    pdb_chain = template_code + '.pdb'
+    pdb_chain = code + chain + '.pdb'
     os.remove(pdb)
     os.remove(pdb_chain)
 
