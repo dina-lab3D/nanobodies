@@ -48,15 +48,13 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("directory", help="directory path to the pdb folder")
-    parser.add_argument("-xl, --crosslinks", help="if used cross links in the docking", action="store_true")
+    parser.add_argument("-xl", "--crosslinks", help="if used cross links in the docking", action="store_true")
     args = parser.parse_args()
     os.chdir(args.directory)
 
     combine_refs(os.getcwd())
-    if args.crosslinks:
-        make_data(os.getcwd(), True)
-    else:
-        make_data(os.getcwd(), False)
+    make_data(os.getcwd(), args.crosslinks)
+
     os.chdir("..")
 
 
