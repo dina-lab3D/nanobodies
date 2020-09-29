@@ -4,9 +4,12 @@ import subprocess
 import pandas as pd
 
 
-def make_data_one(pdb_name):
+def make_data_one(pdb_name, xl):
 
-    docking_df = pd.read_csv("docking_" + pdb_name + ".res", sep="|", header=0, usecols=[1], skipinitialspace=True, skiprows = list(range(0,25)), skipfooter=1)
+    rows_to_skip = 25
+    if xl:
+        rows_to_skip = 30
+    docking_df = pd.read_csv("docking_" + pdb_name + ".res", sep="|", header=0, usecols=[1], skipinitialspace=True, skiprows = list(range(0,rows_to_skip)), skipfooter=1)
     score_df = pd.read_csv("soap_score_" + pdb_name + ".res" , sep="|", header=0, usecols=[0, 1, 6], skipinitialspace=True, skiprows=list(range(0,3)))
     rmsds_df = docking_df.iloc[:, 0].str.extract("([\d\.]+) \(([\d\.]+)\)")
 
@@ -28,15 +31,15 @@ def combine_refs(folder):
     df.to_csv("ref_scores.csv", index=False, header=True)
 
 
-def make_data(folder):
+def make_data(folder, xl):
 
     first = True
     with open("dock_data.csv", 'w') as file:
         for pdb_file in os.listdir(folder):
             #  loop/ model nanobody pdb
-            if (pdb_file.startswith("model") or pdb_file.startswith("loop")) and pdb_file.endswith(".pdb") and "tr" not in pdb_file:  # TODO - change the if condition (less ugly...)
-                pdb_name = pdb_file.split(".")[0]
-                df = make_data_one(pdb_name)
+            if pdb_file.startswith("params"):  # TODO - change the if condition (less ugly...)
+                pdb_name = (pdb_file.split("_")[1] + "_" + pdb_file.split("_")[2]).split(".")[0]
+                df = make_data_one(pdb_name, xl)
                 df.to_csv(file, header=first, index=False)
                 first = False
 
@@ -45,11 +48,12 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("directory", help="directory path to the pdb folder")
+    parser.add_argument("-xl, --crosslinks", help="if used cross links in the docking", action="store_true")
     args = parser.parse_args()
     os.chdir(args.directory)
 
     combine_refs(os.getcwd())
-    make_data(os.getcwd())
+    make_data(os.getcwd(), args.crosslinks)
 
     os.chdir("..")
 

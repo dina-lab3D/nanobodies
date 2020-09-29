@@ -34,8 +34,6 @@ def make_cross_links(pdf_folder):
     os.chdir("..")
 
 
-
-
 if __name__ == '__main__':
 
     """

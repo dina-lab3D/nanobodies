@@ -12,6 +12,7 @@ BAD_PDBS = ["4LAJ_1", "5J56_1", "5TOK_1", "5U4L_1"]
 PLOTS_PATH = "/cs/labs/dina/tomer.cohen13/nanobodies/nano_buddies/docking_plots"
 TOP_SCORES_N = 10
 
+
 def dock_analyze(folder, to_plot, use_cluster):
     """
 
