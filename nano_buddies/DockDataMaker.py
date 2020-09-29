@@ -53,8 +53,10 @@ if __name__ == '__main__':
     os.chdir(args.directory)
 
     combine_refs(os.getcwd())
-    make_data(os.getcwd(), args.crosslinks)
-
+    if args.crosslinks:
+        make_data(os.getcwd(), True)
+    else:
+        make_data(os.getcwd(), False)
     os.chdir("..")
 
 
