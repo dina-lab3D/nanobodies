@@ -13,7 +13,7 @@ def make_data_one(pdb_name, xl):
     score_df = pd.read_csv("soap_score_" + pdb_name + ".res" , sep="|", header=0, usecols=[0, 1, 6], skipinitialspace=True, skiprows=list(range(0,3)))
     rmsds_df = docking_df.iloc[:, 0].str.extract("([\d\.]+) \(([\d\.]+)\)")
 
-    return pd.DataFrame({"index": score_df.iloc[:, 0], "names": [pdb_name] * len(rmsds_df), "ligand_rmsd": rmsds_df.iloc[:, 0], "interface_rmsd": rmsds_df.iloc[:, 0], "soap_score": score_df.iloc[:, 1], "trans": score_df.iloc[:, 2]})
+    return pd.DataFrame({"index": score_df.iloc[:, 0], "names": [pdb_name] * len(rmsds_df), "ligand_rmsd": rmsds_df.iloc[:, 0], "interface_rmsd": rmsds_df.iloc[:, 1], "soap_score": score_df.iloc[:, 1], "trans": score_df.iloc[:, 2]})
 
 
 def combine_refs(folder):
