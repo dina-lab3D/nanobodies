@@ -21,7 +21,7 @@ def combine_refs(folder):
     scores = []
 
     for file in os.listdir(folder):
-        if file.startswith("no_trans") or file == "soap_score_ref.res":
+        if file.startswith("no_trans") or file == "soap_score_ref_temp.res":
             soap_score = subprocess.run("grep \"|\" " + file + " | cut -d '|' -f2", shell=True, capture_output=True, universal_newlines=True).stdout
             soap_score = soap_score.replace(" ","").split("\n")[1:-1]  # split to array
             names.append(file.split(".")[0].split("score_")[-1])
@@ -37,7 +37,7 @@ def make_data(folder, xl):
     with open("dock_data.csv", 'w') as file:
         for pdb_file in os.listdir(folder):
             #  loop/ model nanobody pdb
-            if pdb_file.startswith("params"):  # TODO - change the if condition (less ugly...)
+            if pdb_file.startswith("params") and pdb_file != "params_ref.txt":  # TODO - change the if condition (less ugly...)
                 pdb_name = (pdb_file.split("_")[1] + "_" + pdb_file.split("_")[2]).split(".")[0]
                 df = make_data_one(pdb_name, xl)
                 df.to_csv(file, header=first, index=False)

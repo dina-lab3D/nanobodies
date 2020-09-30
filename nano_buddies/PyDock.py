@@ -90,51 +90,69 @@ def dock_pdb(directory, xl):
         script_file.write("module load opencv\nsetenv CGAL_DIR /cs/labs/dina/dina/libs/CGAL\n")
         script_file.write("rm cat_soap_scores.res\n")  # remove cat_soap_scores.res if already exists (so we can append later)
         script_file.write("echo -n > cat_soap_scores.res\n")
-        for pdb_file in os.listdir(pdb_folder):
-            #  loop/ model nanobody pdb
-            if (pdb_file.startswith("model") or pdb_file.startswith("loop")) and pdb_file.endswith(".pdb") and "tr" not in pdb_file:
-                pdb_name = pdb_file.split(".")[0]
+        # for pdb_file in os.listdir(pdb_folder):
+        #     #  loop/ model nanobody pdb
+        #     if (pdb_file.startswith("model") or pdb_file.startswith("loop")) and pdb_file.endswith(".pdb") and "tr" not in pdb_file:
+        #         pdb_name = pdb_file.split(".")[0]
+        #
+        #         #  align to ref.pdb to get correct rmsd
+        #         script_file.write(RMSD_ALIGN + os.path.join(pdb_folder, "ref.pdb") + " " + os.path.join(pdb_folder, pdb_file) + "\n")
+        #         tr_pdb_file = os.path.join(pdb_folder, pdb_name + "_tr.pdb")
+        #
+        #         #  parameters list
+        #         if xl:
+        #             cross_links_selector(os.path.basename(directory), xl, noise=NOISE)
+        #             script_file.write(SET_CHAIN_NAME + tr_pdb_file + " H\n")
+        #             script_file.write(BUILD_PARAM_XL + tr_pdb_file + " " + os.path.join(pdb_folder, "antigen.pdb") + " " + str(0.5) + " \n")
+        #
+        #         else:
+        #             script_file.write(BUILD_PARAM + tr_pdb_file + " " + os.path.join(pdb_folder, "antigen.pdb") +" 4.0 AA\n")
+        #         #  change name parameters list
+        #         params_name = "params_" + pdb_name + ".txt"
+        #         script_file.write("mv params.txt " + params_name + "\n")
+        #
+        #         #  TODO
+        #         script_file.write("cp mycdrs3 cdrs3" + "\n")
+        #         #  TODO
+        #         script_file.write("cp myframe frame" + "\n")
+        #
+        #         # Docking
+        #         if True:  #  TODO
+        #             docking_name = "docking_" + pdb_name + ".res"
+        #             script_file.write(PATCH_DOCK + params_name + " " + docking_name + "\n")
+        #             trans_name = "trans_" + pdb_name
+        #             script_file.write(PATCH_DOCK_TRANS + docking_name + " > " + trans_name + "\n")
+        #
+        #         #  soap scores
+        #         if True:  #  TODO
+        #             script_file.write(SETUP_ENV + SOAP_SCORE + os.path.join(pdb_folder, "antigen.pdb") + " " + tr_pdb_file + " " + trans_name + " -o soap_score_" + pdb_name + ".res\n")
+        #             script_file.write(SETUP_ENV + SOAP_SCORE + os.path.join(pdb_folder, "antigen.pdb") + " " + tr_pdb_file + " -o no_trans_soap_score_" + pdb_name + ".res\n")
+        #             script_file.write("grep \"|\" soap_score_" + pdb_name + ".res | grep -v SOAP | cut -d '|' -f1,2,7 >> cat_soap_scores.res\n")
 
-                #  align to ref.pdb to get correct rmsd
-                script_file.write(RMSD_ALIGN + os.path.join(pdb_folder, "ref.pdb") + " " + os.path.join(pdb_folder, pdb_file) + "\n")
-                tr_pdb_file = os.path.join(pdb_folder, pdb_name + "_tr.pdb")
+        ###############################################
 
-                #  parameters list
-                if xl:
-                    cross_links_selector(os.path.basename(directory), xl, noise=NOISE)
-                    script_file.write(SET_CHAIN_NAME + tr_pdb_file + " H\n")
-                    script_file.write(BUILD_PARAM_XL + tr_pdb_file + " " + os.path.join(pdb_folder, "antigen.pdb") + " " + str(0.5) + " \n")
+        script_file.write(BUILD_PARAM + os.path.join(pdb_folder, "ref.pdb") + " " + os.path.join(pdb_folder, "antigen.pdb") +" 4.0 AA\n")
+        params_name = "params_ref.txt"
+        script_file.write("mv params.txt " + params_name + "\n")
+        script_file.write("cp mycdrs3 cdrs3" + "\n")
+        script_file.write("cp myframe frame" + "\n")
+        # Docking
+        if True:  #  TODO
+            docking_name = "docking_ref.res"
+            script_file.write(PATCH_DOCK + params_name + " " + docking_name + "\n")
+            trans_name = "trans_ref"
+            script_file.write(PATCH_DOCK_TRANS + docking_name + " > " + trans_name + "\n")
+        #  soap scores
+        if True:  #  TODO
+            script_file.write(SETUP_ENV + SOAP_SCORE + os.path.join(pdb_folder, "antigen.pdb") + " " + os.path.join(pdb_folder, "ref.pdb") + " " + trans_name + " -o soap_score_ref.res\n")
 
-                else:
-                    script_file.write(BUILD_PARAM + tr_pdb_file + " " + os.path.join(pdb_folder, "antigen.pdb") +" 4.0 AA\n")
-                #  change name parameters list
-                params_name = "params_" + pdb_name + ".txt"
-                script_file.write("mv params.txt " + params_name + "\n")
-
-                #  TODO
-                script_file.write("cp mycdrs3 cdrs3" + "\n")
-                #  TODO
-                script_file.write("cp myframe frame" + "\n")
-
-                # Docking
-                if True:  #  TODO
-                    docking_name = "docking_" + pdb_name + ".res"
-                    script_file.write(PATCH_DOCK + params_name + " " + docking_name + "\n")
-                    trans_name = "trans_" + pdb_name
-                    script_file.write(PATCH_DOCK_TRANS + docking_name + " > " + trans_name + "\n")
-
-                #  soap scores
-                if True:  #  TODO
-                    script_file.write(SETUP_ENV + SOAP_SCORE + os.path.join(pdb_folder, "antigen.pdb") + " " + tr_pdb_file + " " + trans_name + " -o soap_score_" + pdb_name + ".res\n")
-                    script_file.write(SETUP_ENV + SOAP_SCORE + os.path.join(pdb_folder, "antigen.pdb") + " " + tr_pdb_file + " -o no_trans_soap_score_" + pdb_name + ".res\n")
-                    script_file.write("grep \"|\" soap_score_" + pdb_name + ".res | grep -v SOAP | cut -d '|' -f1,2,7 >> cat_soap_scores.res\n")
-
-        script_file.write(SETUP_ENV + SOAP_SCORE + os.path.join(pdb_folder, "antigen.pdb") + " " + os.path.join(pdb_folder, "ref.pdb") + " -o soap_score_ref.res\n")
-        flag = " "
-        if xl:
-            flag = " -xl"
-        script_file.write("python3 " + DOCK_DATA_MAKER + " " + os.getcwd() + flag + "\n")
-        script_file.write(CLUSTER + " -f " + os.path.join(pdb_folder, "antigen.pdb") + " " + os.path.join(pdb_folder, "ref.pdb") + " dock_data.csv 4 soap_score_cluster.res\n")
+    ######################################
+        # script_file.write(SETUP_ENV + SOAP_SCORE + os.path.join(pdb_folder, "antigen.pdb") + " " + os.path.join(pdb_folder, "ref.pdb") + " -o soap_score_ref_temp.res\n")
+        # flag = " "
+        # if xl:
+        #     flag = " -xl"
+        # script_file.write("python3 " + DOCK_DATA_MAKER + " " + os.getcwd() + flag + "\n")
+        # script_file.write(CLUSTER + " -f " + os.path.join(pdb_folder, "antigen.pdb") + " " + os.path.join(pdb_folder, "ref.pdb") + " dock_data.csv 4 soap_score_cluster.res\n")
 
     #  send the script to the cluster
     subprocess.run("sbatch dock_script.sh", shell=True)

@@ -1,0 +1,27 @@
+
+
+1. Nanobody modeling:
+
+    - check why not working: "4LAJ_1", "5J56_1", "5TOK_1", "5U4L_1"  (dina)
+    - check why rmsd is high: 5VXL_1, 6ITC_2, 4PIR_1, 4X7C_1  (dina)
+
+    - optimize number of templates for Modeler (now is 10)
+    - optimize sequence identity of templates
+    - optimize cdr3 boundaries (line 304 ModelNanobody.py)
+
+    - loop modeling for cdr2/cdr1 (check rmsd of cdr2, cdr1 only)
+    - chose plots
+
+2. Docking (no xl):
+
+    - top 1, top 10, top 100 - how much for each type (acceptable, etc.)
+    - check if a good model in the previous stage helps us in the docking stage
+
+3. Docking (with xl):
+
+    - top 1, top 10, top 100 - how much for each type and for each number of xl.
+
+4. Web Server:
+
+    - create web server program!
+
