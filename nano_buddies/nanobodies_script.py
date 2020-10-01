@@ -38,7 +38,7 @@ def main(abs_path_folder, file_name):
                    "/" + folder_name + ".fa", shell=True)
 
     # move the pdb file
-    subprocess.run("mv " + os.path.join(abs_path_folder, file_name) + " " + abs_path_folder, shell=True)
+    subprocess.run("mv " + abs_path_folder + ".pdb " + abs_path_folder, shell=True)
 
 
 if __name__ == '__main__':

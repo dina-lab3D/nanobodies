@@ -7,7 +7,7 @@ import subprocess
 MEMORY = "10000m"
 
 # max time for each batch
-TIME = "72:0:0"
+TIME = "8:0:0"
 
 SCRIPT_PATH = "/cs/labs/dina/tomer.cohen13/nanobodies/nano_buddies/nanobodies_script.py"
 
@@ -18,8 +18,6 @@ INTRO = "#!/bin/tcsh\n" \
         "#SBATCH --time=" + TIME + "\n"
 
 
-
-
 if __name__ == '__main__':
     # make sure that you go to cluster (like hm) before calling this program!
 
@@ -27,7 +25,6 @@ if __name__ == '__main__':
     for file in os.listdir(pwd):
         if file.endswith('.pdb'):  # goes over all pdb files in that directory
             current_folder_path = pwd + "/" + file.split(".")[0]
-            print(current_folder_path)
 
             if not os.path.isdir(current_folder_path):
                 os.mkdir(current_folder_path)

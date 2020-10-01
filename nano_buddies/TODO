@@ -8,8 +8,8 @@
     - optimize number of templates for Modeler (now is 10)
     - optimize sequence identity of templates
     - optimize cdr3 boundaries (line 304 ModelNanobody.py)
-
     - loop modeling for cdr2/cdr1 (check rmsd of cdr2, cdr1 only)
+
     - chose plots
 
 2. Docking (no xl):
