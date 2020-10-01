@@ -20,11 +20,12 @@ rmsd_prog = "/cs/staff/dina/utils/rmsd/"
 get_pdb = "/cs/staff/dina/scripts/getPDB.pl"
 get_pdb_chains = "/cs/staff/dina/scripts/getPDBChains.pl"
 
-
+TEMPLATES_NUM = 7
+print(TEMPLATES_NUM)
 # runs blast
 def run_blast(filename):
     out_file = filename + ".blast"
-    blast_file = blast_home + "../pdbaa ";
+    blast_file = blast_home + "../pdbaa "
     cmd = blast_home + "blastp -db " + blast_file + " -query " + filename + " -outfmt 5 >& " + out_file
     print (cmd)
     # Put stderr and stdout into pipes
@@ -33,17 +34,20 @@ def run_blast(filename):
     if return_code != 0:
         print ("blast subprocess failed with exit code " , return_code)
 
+
 # get first sequence
 def get_sequence(fasta_filename):
     for seq_record in SeqIO.parse(fasta_filename, "fasta"):
         sequence = str(seq_record.seq)
         return sequence
 
+
 # get first sequence id
 def get_sequence_id(fasta_filename):
     for seq_record in SeqIO.parse(fasta_filename, "fasta"):
         sequence_id = str(seq_record.id)
         return sequence_id
+
 
 # input for modeller instead of fasta
 def write_ali_file(sequence):
@@ -54,9 +58,10 @@ def write_ali_file(sequence):
     f.write("*\n")
     f.close()
 
+
 # get num_templates template pdbs based on blast xml
 # returns a list of tuples (pdb_code, chain_id, template_start_res, template_end_res)
-def get_templates_blast_xml(blast_file_name, num_templates = 10, filter = False):
+def get_templates_blast_xml(blast_file_name, num_templates = TEMPLATES_NUM, filter = False):
     result = open(blast_file_name,"r")
     records = NCBIXML.parse(result)
     item = next(records)
@@ -113,7 +118,7 @@ def get_templates_blast_xml(blast_file_name, num_templates = 10, filter = False)
 
 
 # get template pdbs based on blast (old version)
-def get_templates(blast_file_name, num_templates = 10, filter = False):
+def get_templates(blast_file_name, num_templates = TEMPLATES_NUM, filter = False):
     count = 0
     template_list = []
 
