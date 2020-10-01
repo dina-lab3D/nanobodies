@@ -34,7 +34,7 @@ def main(abs_path_folder, file_name):
 
     # run the script that creates the loops models
 
-    subprocess.run("~dina/modeller9.18/bin/modpy.sh python /cs/labs/dina/tomer.cohen13/nanobodies/scripts/modelNanobody.py " + FLAGS + " " + abs_path_folder +
+    subprocess.run("~dina/modeller9.18/bin/modpy.sh python3 /cs/labs/dina/tomer.cohen13/nanobodies/scripts/modelNanobody.py " + FLAGS + " " + abs_path_folder +
                    "/" + folder_name + ".fa", shell=True)
 
     # move the pdb file
