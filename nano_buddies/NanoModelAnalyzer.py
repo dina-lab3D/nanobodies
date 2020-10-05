@@ -1,24 +1,32 @@
 import pandas as pd
 import numpy as np
-import os, sys
+import os
 import enum
-import matplotlib.pyplot as plt
 from plotnine import *
 import argparse
 
-
+# columns names for the data frame (of scores.txt)
 COL = ["type", "name", "dope_score", "soap_score", "rmsd"]
 FULL_COL = ["type", "name", "dope_score", "soap_score", "rmsd", "length"]
 
+# path to the directory containing all the lengths of the pdbs
 LENGTH_PATH = "/cs/labs/dina/tomer.cohen13/lengths"
+
+# length file name
 LENGTH_FILE = "nano_length.txt"
 
-PLOTS_PATH = "/cs/labs/dina/tomer.cohen13/nanobodies/nano_buddies/plots1000"
 
+PLOTS_PATH = "model_plots"
 
+# number of models to take in general
 TOP_SCORES_N = 10
+
+# number of models to take from loops
 TOP_LOOP_N = 5
+
+# number of models to take from models
 TOP_MODEL_N = 5
+
 
 # Using enum class create enumerations
 class ColInfo(enum.Enum):
@@ -38,25 +46,22 @@ def get_scores_data(pdb_folder):
     return pd.read_csv(os.path.join(pdb_folder, "scores.txt"), sep=" ", header=None, names=COL, usecols=[0,1,3,5,7])
 
 
-def generate_rmsd_graph(data, name):
+def generate_rmsd_graph(folder, data, name):
     """
     saves the box plots of the length against minimal rmsd for all the
     nanobodies in data (box plot for each length)
+    :param folder: pdbs folder path
     :param data: DataFrame with column names  = FULL_COL
     :param name: "Model"/"Loop"
     :return: None
     """
-    data["rmsd"] = pd.to_numeric(data["rmsd"])
-    data["length"] = pd.to_numeric(data["length"])
-    plot = ggplot(data,aes(x="factor(length)", y="rmsd")) + geom_boxplot(color="blue") + \
+    data["rmsd"] = pd.to_numeric(data["rmsd"])  # cast to float
+    data["length"] = pd.to_numeric(data["length"])  # cast to float
+
+    plot = ggplot(data, aes(x="factor(length)", y="rmsd")) + geom_boxplot(color="blue") + \
            geom_jitter(alpha=0.7, color="skyblue") + \
-           ggtitle("rmsd VS. length for " + name + " results") + labs(x="length", y="RMSD")
-    plot.save(os.path.join(PLOTS_PATH, "rmsd_boxplot_" + name))
-
-
-    # axes_boxplot = data.boxplot(column=["rmsd"], by=["length"], grid=False, showfliers=False)
-    # axes_boxplot.set_title("rmsd VS. length for " + name + " results")
-    # plt.savefig("rmsd_boxplot_" + name)
+           ggtitle("RMSD VS. length for " + name + " results") + labs(x="length", y="RMSD")
+    plot.save(os.path.join(folder, PLOTS_PATH, "rmsd_boxplot_" + name))
 
 
 def generate_final_scores(folder_path):
@@ -112,17 +117,8 @@ def extract_box_graphs(folder_path):
     """
     models, loops = generate_final_scores(folder_path)
 
-    generate_rmsd_graph(models, "Model")
-    generate_rmsd_graph(loops, "Loop")
-
-
-# def extract_energy_vs_rmsd(pdb_path, pdb_name, score_type):
-#     """'
-#     """
-#     df = pd.read_csv(pdb_path + "/" + pdb_name + "/scores.txt", sep=" ", header=None, names=COL)
-#     for i in range(5):
-#         loop_min_idx = df[df['type'] == "LOOP"][score_type].idxmin()
-#         model_min_idx = df[df['type'] == "MODEL"][score_type].idxmin()
+    generate_rmsd_graph(folder_path, models, "Model")
+    generate_rmsd_graph(folder_path, loops, "Loop")
 
 
 def get_min_rmsd_by_score(df, score_name):
@@ -158,11 +154,12 @@ def get_min_rmsd_by_type_score(df, score_name):
     return min_index, rmsd_min_index
 
 
-def plot_points_one_pdb(pdb_folder, score_name):
+def plot_points_one_pdb(folder, pdb_folder, score_name):
     """
     plots a graph that shows the rmsd of the nanobody against its
     score
-    :param pdb_path: pdb directory path
+    :param folder: pdbs folder
+    :param pdb_folder: folder of the pdb
     :param score_name: score to use (dope_score/soap_score)
     :return: None
     """
@@ -190,10 +187,10 @@ def plot_points_one_pdb(pdb_folder, score_name):
            geom_text(aes(y=df.iloc[top_scores_index][score_name], x=top_scores_min, label="%.2f" % top_scores_min), size=8, ha="right", va="top") + \
            geom_text(aes(y=df.iloc[rmsd_min_index][score_name], x=rmsd_min, label="%.2f" % rmsd_min), size=8, ha="right", va="top")
 
-    plot.save(os.path.join(PLOTS_PATH, pdb_name + "_" + score_name + "_plot"))
+    plot.save(os.path.join(folder, PLOTS_PATH, pdb_name + "_" + score_name + "_plot"))
 
 
-def plot_summery_scores(input_file, score):
+def plot_summery_scores(folder, input_file, score):
 
     df = pd.read_csv(input_file)
     name = os.path.basename(input_file).split(".")[0]
@@ -209,8 +206,8 @@ def plot_summery_scores(input_file, score):
            geom_vline(xintercept=2, linetype='dotted', color="red", show_legend=True) + \
             ggtitle("MIN RMSD vs " + score.replace("_", " ").upper() + " (left of line=" + str(left_of_line_min_rmsd) + ")")
 
-    plot.save(os.path.join(PLOTS_PATH, name))
-    plot2.save(os.path.join(PLOTS_PATH, "summery_min_rmsd_" + score))
+    plot.save(os.path.join(folder, PLOTS_PATH, name))
+    plot2.save(os.path.join(folder, PLOTS_PATH, "summery_min_rmsd_" + score))
 
 
 def summery_rmsd_scores(directory, score):
@@ -221,8 +218,8 @@ def summery_rmsd_scores(directory, score):
     :param score: score to use(dope_score,soap_score)
     :return: None
     """
-    summery_best_10 = os.path.join(directory, "summery", "summery_10_rmsd_" + score + ".csv")
-    summery_best_5_by_type = os.path.join(directory, "summery", "summery_" + "m" + str(TOP_MODEL_N) + "_l" + str(TOP_LOOP_N) + "_rmsd_" + score + ".csv")
+    summery_best_10 = os.path.join(directory, "model_summery", "summery_10_rmsd_" + score + ".csv")
+    summery_best_5_by_type = os.path.join(directory, "model_summery", "summery_" + "m" + str(TOP_MODEL_N) + "_l" + str(TOP_LOOP_N) + "_rmsd_" + score + ".csv")
 
     with open(summery_best_10, 'w') as output_file_10:
         with open(summery_best_5_by_type, "w") as output_file_5_5:
@@ -233,8 +230,8 @@ def summery_rmsd_scores(directory, score):
                     one_pdb_rmsd_scores(pdb_folder, score, get_min_rmsd_by_score).to_csv(output_file_10, header=first_pdb, index=False)
                     one_pdb_rmsd_scores(pdb_folder, score, get_min_rmsd_by_type_score).to_csv(output_file_5_5, header=first_pdb, index=False)
                     first_pdb = False
-    plot_summery_scores(summery_best_10, score)
-    plot_summery_scores(summery_best_5_by_type, score)
+    plot_summery_scores(directory, summery_best_10, score)
+    plot_summery_scores(directory, summery_best_5_by_type, score)
 
     summery_differences(directory, score, summery_best_10, summery_best_5_by_type)
 
@@ -264,7 +261,7 @@ def summery_differences(directory, score_name, summery_best_10_path, summery_bes
     df2 = pd.DataFrame({"type": ["5"], "rmsd_sum": [rmsd_sum2], "diff_sum": [diff_sum2], "diff_num_under_0.3": [diff_03_2], "num_rmsd_under_2": [rmsd_under_2_2],
                        "num_rmsd_under_1.5": [rmsd_under_15_2], "num_rmsd_under_1": [rmsd_under_1_2], "num_rmsd_under_0.5": [rmsd_under_05_2]})
 
-    pd.concat([df1, df2]).to_csv(os.path.join(directory, "summery", "diff_summery_" + score_name + "m" + str(TOP_MODEL_N) + "l" + str(TOP_LOOP_N) + ".csv"), header=True, index=False)
+    pd.concat([df1, df2]).to_csv(os.path.join(directory, "model_summery", "diff_summery_" + score_name + "m" + str(TOP_MODEL_N) + "l" + str(TOP_LOOP_N) + ".csv"), header=True, index=False)
 
 
 def one_pdb_rmsd_scores(pdb_folder, score_name, min_func):
@@ -306,7 +303,7 @@ def plot_rmsd_vs_score(directory, n, score):
             return
         pdb_folder = os.path.join(directory, file)
         if os.path.isdir(pdb_folder) and os.path.exists(os.path.join(pdb_folder, "scores.txt")):
-            plot_points_one_pdb(pdb_folder, score)
+            plot_points_one_pdb(directory, pdb_folder, score)
             n -= 1
 
 
@@ -317,16 +314,19 @@ if __name__ == '__main__':
     parser.add_argument("score", help="score to use (dope_score/soap_score)")
     parser.add_argument("-b", "--boxplot", help="saves box plots", action="store_true")
     parser.add_argument("-p", "--points", help="saves points plots, gets number of pdbs to plot", type=int)
-    parser.add_argument("-s", "--summery", help="savessumery plots nad creats summry csv", action="store_true")
+    parser.add_argument("-s", "--summery", help="saves sumery plots nad creats summry csv", action="store_true")
 
     args = parser.parse_args()
+    if not os.path.isdir(os.path.join(args.directory, PLOTS_PATH)):
+        os.mkdir(os.path.join(args.directory, PLOTS_PATH))
+
     if args.boxplot:  # if we want to create boxplot
         extract_box_graphs(args.directory)
     if args.points:  # if we want to create point plots (rmsd vs score)
         plot_rmsd_vs_score(args.directory, args.points, args.score)
     if args.summery:  # if we want to create point plots (rmsd vs score)
-        if not os.path.isdir(os.path.join(args.directory, "summery")):
-            os.mkdir(os.path.join(args.directory, "summery"))
+        if not os.path.isdir(os.path.join(args.directory, "model_summery")):
+            os.mkdir(os.path.join(args.directory, "model_summery"))
         summery_rmsd_scores(args.directory, args.score)  # saves summery into csv file
 
 

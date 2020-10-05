@@ -1,0 +1,29 @@
+
+HOW TO USE:
+
+- create a folder <pdbs_folder> with pdbs (each pdb contains a antigen and nanobody, the nanobody chain is H)
+
+Modeling:
+
+- run "python3 NanoModelBatch.py <pdbs_folder>"  (run it in some cluster, do ssh hm first)
+- run "python3 NanobodySelector.py <pdbs_folder>"
+- run "python3 NanoModelAnalyzer.py <pdbs_folder> <soap_score\dope_score>" if you want to get plots and charts with the modeling data.
+    options:
+        -s : saves sumery plots and creats summry csv
+        -b : saves box plots of length against rmsd
+        -p : saves points plots, gets number of pdbs to plot
+
+
+Docking:
+
+- run "python3 CrossLinksMaker.py <pdbs_folder>" for generating cross links (run it in some cluster, do ssh hm first)
+- run "python3 PyDock.py <pdbs_folder>" for docking.
+    options:
+        -xl : use cross links for docking (get max number of cross links to use) - use this option only after running
+              CrossLinksMaker.py!
+- run "python3 DockScoreAnalyzer.py <pdbs_folder>" if you want to get plots and charts with the docking data.
+    options:
+        - p : plots the summery data"
+        - c: use the data after clustering
+        - xl: use the data after cross links with <n> cross links (make sure to run CrossLinksMaker.py and PyDock.py
+              with -xl=n first)

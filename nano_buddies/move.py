@@ -7,4 +7,5 @@ if __name__ == '__main__':
     os.chdir(sys.argv[1])
     for pdb in os.listdir(sys.argv[1]):
         if pdb.endswith(".pdb"):
+            subprocess.run("mkdir " + pdb.split(".")[0], shell=True)
             subprocess.run("mv " + pdb + " " + pdb.split(".")[0], shell=True)
