@@ -61,7 +61,8 @@ def dock_analyze(folder, to_plot, use_cluster, cross_links):
 
     # read the docking data
     if use_cluster:
-        data_df = pd.read_csv("soap_score_cluster.res", sep="|", header=None, skipinitialspace=True, skiprows=list(range(0, 2)), names=["number", "index", "names", "ligand_rmsd", "interface_rmsd", "soap_score", "cluster_size", "transformation"])
+        data_df = pd.read_csv("soap_score_cluster.res", sep="|", header=None, skipinitialspace=True, skiprows=list(range(0, 2)),
+                              names=["number", "index", "names", "ligand_rmsd", "interface_rmsd", "soap_score", "cluster_size", "transformation"])
     else:
         try:
             data_df = pd.read_csv("dock_data.csv")
