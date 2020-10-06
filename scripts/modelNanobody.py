@@ -20,8 +20,9 @@ rmsd_prog = "/cs/staff/dina/utils/rmsd"
 get_pdb = "/cs/staff/dina/scripts/getPDB.pl"
 get_pdb_chains = "/cs/staff/dina/scripts/getPDBChains.pl"
 
-TEMPLATES_NUM = 7
+TEMPLATES_NUM = 10
 print(TEMPLATES_NUM)
+
 # runs blast
 def run_blast(filename):
     out_file = filename + ".blast"
@@ -67,6 +68,9 @@ def get_templates_blast_xml(blast_file_name, num_templates = TEMPLATES_NUM, filt
     item = next(records)
     counter = 0
     returned_templates = []
+    seq_identity_list = []
+    seq_file = open("seq_identity", 'w')
+
     for alignment in item.alignments:
         for hsp in alignment.hsps:
             if hsp.expect <0.01:
@@ -85,6 +89,7 @@ def get_templates_blast_xml(blast_file_name, num_templates = TEMPLATES_NUM, filt
 
                 if counter < num_templates:
                     returned_templates.append((pdb, chain, hsp.sbjct_start, hsp.sbjct_end))
+                    seq_identity_list.append(seq_identity)
 
                     # get PDB files - all + chain only
                     pdb_name = pdb + ".pdb"
@@ -110,10 +115,23 @@ def get_templates_blast_xml(blast_file_name, num_templates = TEMPLATES_NUM, filt
                         if return_code != 0:
                             print ("getPDB.pl subprocess failed with exit code " , return_code)
 
+                    seq_file.write(str(seq_identity) + "\n")
                     counter+=1
         if counter >= num_templates:
             break
 
+    returned_templates = filter_templates(returned_templates, seq_identity_list)
+    return returned_templates
+
+
+def filter_templates(templates, seq_list):
+    returned_templates = []
+    max_identity = max(seq_list)
+    seq_file = open("seq_identity_filter", 'w')
+    for index in range(len(seq_list)):
+        if (max_identity - seq_list[index]) <= 5:
+            returned_templates.append(templates[index])
+            seq_file.write(str(seq_list[index]) + "\n")
     return returned_templates
 
 
