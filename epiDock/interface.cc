@@ -10,18 +10,19 @@
 
 using std::ifstream;
 
-class ChainNoWaterHydrogenSelector : public PDB::Selector {
+class CAlphaChainSelector : public PDB::Selector {
 public:
     // constructor
-    ChainNoWaterHydrogenSelector(const std::string &chainID) : chains(chainID) {}
+    CAlphaChainSelector(const std::string &chainID) : chains(chainID) {}
 
-    virtual ~ChainNoWaterHydrogenSelector() {}
+    virtual ~CAlphaChainSelector() {}
 
     bool operator()(const char *PDBrec) const {
         PDB::WaterHydrogenUnSelector sel;
         if (sel(PDBrec)) {
             PDB::ChainSelector chainSel(chains);
-            return chainSel(PDBrec);
+            PDB::CAlphaSelector calphaSel;
+            return (chainSel(PDBrec) && calphaSel(PDBrec));
         }
         return false;
     }
@@ -41,6 +42,10 @@ int main(int argc, char **argv) {
   float interfaceThr = atof(argv[INTERFACE_THR_IDX]);
 
   std::vector<double> epitope;
+  ChemMolecule mol;
+  std::ifstream molFile(argv[INTERFACE_THR_IDX+1]);
+  mol.readPDBfile(molFile, CAlphaChainSelector(chains1));
+
 
   for(int i=INTERFACE_THR_IDX+1; i<argc; i++) {
     /* read molecules */
@@ -58,7 +63,7 @@ int main(int argc, char **argv) {
 
   std::cout << epitope.size() << std::endl;
   std::ofstream ofile("epi.csv");
-  int numberOfChains  = 1;// TODO: change back to 1, add as option later
+  int numberOfChains  = 3;// TODO: change back to 1, add as option later
   int range = epitope.size()/numberOfChains;
   int molNum = argc -4;
   for(int i=0; i<range; i++) {
@@ -71,5 +76,14 @@ int main(int argc, char **argv) {
   }
   ofile << std::endl;
   ofile.close();
+
+  std::ofstream hfile("header.csv");
+  for(int i=0; i<range; i++) {
+     hfile << mol[i].residueIndex() << ", ";
+  }
+
+  hfile << std::endl;
+  hfile.close();
+
   return 0;
 }

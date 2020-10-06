@@ -1,7 +1,7 @@
 CC = gcc
 
-LIB = ${GAMBPATH}
-MYLIB = ${GAMBPATH}/../DockingLib/
+LIB = /cs/labs/dina/dina/libs/gamb++/
+MYLIB = /cs/labs/dina/dina/libs/gamb++/../DockingLib/
 
 CCFLAGS = -I$(LIB) -I$(MYLIB) -Wall -O2
 LDFLAGS = -static -L$(LIB) -L$(MYLIB) -ldockingLib -lgamb++ -lstdc++ -O2 -lm
