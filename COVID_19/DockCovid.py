@@ -3,8 +3,7 @@ import argparse
 import os
 import subprocess
 import re
-import pandas as pd
-import numpy as np
+
 
 # max memory for each batch
 MEMORY = "10000m"
