@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
     mol1.readPDBfile(molFile1, PDB::ChainSelector(chains1));
     molFile1.close();
     std::ifstream molFile2(argv[i]);
-    mol2.readAllPDBfile(molFile2, PDB::ChainSelector(chains2));
+    mol2.readPDBfile(molFile2, PDB::ChainSelector(chains2));
     molFile2.close();
     MolecularInterface molInterface(mol1, mol2, interfaceThr);
     molInterface.getReceptorInterfaceResidues(epitope);
