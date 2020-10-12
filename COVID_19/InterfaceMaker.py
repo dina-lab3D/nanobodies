@@ -10,12 +10,7 @@ HEADER = "/cs/usr/tomer.cohen13/lab/nanobodies/COVID_19/header.csv"
 
 def get_interface(folder):
     os.chdir(folder)
-    nanobody_list = []
-    for pdb in os.listdir(os.getcwd()):
-        if pdb.startswith("nanobody_trans_") and pdb.endswith(".pdb"):
-            nanobody_list.append(pdb)
-
-    subprocess.run(INTERFACE + " ABC H 6 " + " ".join(nanobody_list), shell=True)
+    subprocess.run(INTERFACE + " ABC H 6 nanobody_trans_*.pdb", shell=True)
     df = pd.read_csv("epi.csv", header=None)
     os.chdir("..")
     return df
