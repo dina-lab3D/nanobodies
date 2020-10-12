@@ -4,10 +4,10 @@ import os
 import subprocess
 
 # max memory for each batch
-MEMORY = "10000m"
+MEMORY = "8000m"
 
 # max time for each batch
-TIME = "14:0:0"
+TIME = "8:0:0"
 
 # NanoModelScript.py path
 SCRIPT_PATH = "/cs/labs/dina/tomer.cohen13/nanobodies/nano_buddies/NanoModelScript.py"
