@@ -240,7 +240,7 @@ print ("Args: seq_file=" + fasta_file_name + " test_mode=" + str(filter_similar_
 nb_sequence = get_sequence(fasta_file_name)
 nb_sequence_id = get_sequence_id(fasta_file_name)
 write_ali_file(nb_sequence)
-#[cdr1_start, cdr1_end] = cdr_annotation.find_cdr1(nb_sequence)
+#[cdr1_start, cdr1_end] = cdr_annotation.find_cdr1(nb_sequence) TODO- fix the cdr1 bug
 [cdr2_start, cdr2_end] = cdr_annotation.find_cdr2(nb_sequence)
 [cdr3_start, cdr3_end] = cdr_annotation.find_cdr3(nb_sequence)
 
@@ -268,9 +268,13 @@ for template in template_list:
     code = pdb_code+chain
     #start = str(template_start)+':' +chain
     #end = str(template_end)+':'+ chain
-    mdl = model(env, file=code, model_segment=('FIRST:'+chain, '+120:'+chain))
-    aln.append_model(mdl, atom_files=pdb_code, align_codes=pdb_code+chain)
-    template_list2.append(code)
+    try:
+        mdl = model(env, file=code, model_segment=('FIRST:'+chain, '+120:'+chain))
+        aln.append_model(mdl, atom_files=pdb_code, align_codes=pdb_code+chain)
+        template_list2.append(code)
+    except OSError:  # pdb file not found...
+        continue
+
 
 for (weights, write_fit, whole) in (((1., 0., 0., 0., 1., 0.), False, True),
                                     ((1., 0.5, 1., 1., 1., 0.), False, True),
@@ -342,7 +346,7 @@ print (best_model, best_score)
 class MyLoop(loopmodel):
     # This routine picks the residues to be refined by loop modeling
     def select_loop_atoms(self):
-        return selection(self.residue_range(cdr3_start+1, cdr3_end-2)) # focus
+        return selection(self.residue_range(cdr3_start-1, cdr3_end+2)) # focus
 
 m = MyLoop(env,
            inimodel=best_model, # initial model of the target
@@ -392,11 +396,11 @@ for n in range(1, model_num+1):
 
         subprocess.run(rmsd_align + " ref.pdb" + " " + model_name, shell=True)  # align to get rmsd of cdr without cheating...
 
-        #  subprocess.run(get_frag_chain + " " + model_name.replace(".pdb", "_tr.pdb") + " H " + str(cdr1_start) + " " + str(cdr1_end) + " > temp_cdr1.pdb", shell=True)
+        #  subprocess.run(get_frag_chain + " " + model_name.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr1_start) + " " + str(cdr1_end) + " > temp_cdr1.pdb", shell=True)
         subprocess.run(get_frag_chain + " " + model_name.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr2_start) + " " + str(cdr2_end) + " > temp_cdr2.pdb", shell=True)
         subprocess.run(get_frag_chain + " " + model_name.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr3_start) + " " + str(cdr3_end) + " > temp_cdr3.pdb", shell=True)
 
-        #  cdr1_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr1.pdb temp_cdr1.pdb | tail -n1 ", shell=True))
+        #  cdr1_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr1.pdb temp_cdr1.pdb | tail -n1 ", shell=True).strip())
         cdr2_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr2.pdb temp_cdr2.pdb | tail -n1 ", shell=True).strip())
         cdr3_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr3.pdb temp_cdr3.pdb | tail -n1 ", shell=True).strip())
 
@@ -433,11 +437,11 @@ for i in range(1, loop_model_num+1):
 
     subprocess.run(rmsd_align + " ref.pdb" + " " + code, shell=True)  # align to get rmsd of cdr without cheating...
 
-    #subprocess.run(get_frag_chain + " " + code.replace(".pdb", "_tr.pdb") + " H " + str(cdr1_start) + " " + str(cdr1_end) + " > temp_cdr1.pdb", shell=True)
-    subprocess.run(get_frag_chain + " " + code.replace(".pdb", "_tr.pdb") + " H " + str(cdr2_start) + " " + str(cdr2_end) + " > temp_cdr2.pdb", shell=True)
-    subprocess.run(get_frag_chain + " " + code.replace(".pdb", "_tr.pdb") + " H " + str(cdr3_start) + " " + str(cdr3_end) + " > temp_cdr3.pdb", shell=True)
+    #subprocess.run(get_frag_chain + " " + code.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr1_start) + " " + str(cdr1_end) + " > temp_cdr1.pdb", shell=True)
+    subprocess.run(get_frag_chain + " " + code.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr2_start) + " " + str(cdr2_end) + " > temp_cdr2.pdb", shell=True)
+    subprocess.run(get_frag_chain + " " + code.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr3_start) + " " + str(cdr3_end) + " > temp_cdr3.pdb", shell=True)
 
-    #cdr1_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr1.pdb temp_cdr1.pdb | tail -n1 ", shell=True))
+    #cdr1_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr1.pdb temp_cdr1.pdb | tail -n1 ", shell=True).strip())
     cdr2_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr2.pdb temp_cdr2.pdb | tail -n1 ", shell=True).strip())
     cdr3_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr3.pdb temp_cdr3.pdb | tail -n1 ", shell=True).strip())
 
@@ -451,7 +455,7 @@ for i in range(1, loop_model_num+1):
 
 # clean cdrs files
 if os.path.isfile("ref.pdb"):
-    os.remove("temp_cdr1.pdb")
+    # os.remove("temp_cdr1.pdb")
     os.remove("temp_cdr2.pdb")
     os.remove("temp_cdr3.pdb")
     os.remove("ref_renumber.pdb")
