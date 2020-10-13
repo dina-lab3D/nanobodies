@@ -6,8 +6,11 @@ from plotnine import *
 import argparse
 
 # columns names for the data frame (of scores.txt)
-COL = ["type", "name", "dope_score", "soap_score", "rmsd"]
-FULL_COL = ["type", "name", "dope_score", "soap_score", "rmsd", "length"]
+COL = ["type", "name", "dope_score", "soap_score", "rmsd", "cdr1_rmsd", "cdr2_rmsd", "cdr3_rmsd"]
+FULL_COL = ["type", "name", "dope_score", "soap_score", "rmsd", "cdr1_rmsd", "cdr2_rmsd", "cdr3_rmsd", "length"]
+
+# columns names for file cdrs_dist
+CDRS_COL = ["-3", "-2", "-1", "0 start", "1", "2", "3", "0 end"]
 
 # path to the directory containing all the lengths of the pdbs
 LENGTH_PATH = "/cs/labs/dina/tomer.cohen13/lengths"
@@ -43,7 +46,7 @@ def get_scores_data(pdb_folder):
     :param pdb_folder: path of the pdb folder
     :return: df (len(COL) columns)
     """
-    return pd.read_csv(os.path.join(pdb_folder, "scores.txt"), sep=" ", header=None, names=COL, usecols=[0,1,3,5,7])
+    return pd.read_csv(os.path.join(pdb_folder, "scores.txt"), sep=" ", header=None, names=COL, usecols=[0,1,3,5,7,9,11,13])
 
 
 def generate_rmsd_graph(folder, data, name):
@@ -133,8 +136,9 @@ def get_min_rmsd_by_score(df, score_name):
     top_min_index = top_scores["rmsd"].idxmin()
 
     rmsd_min_index = df["rmsd"].idxmin()
+    cdr3_min_index = df["cdr3_rmsd"].idxmin()
 
-    return top_min_index, rmsd_min_index
+    return top_min_index, rmsd_min_index, cdr3_min_index
 
 
 def get_min_rmsd_by_type_score(df, score_name):
@@ -150,8 +154,9 @@ def get_min_rmsd_by_type_score(df, score_name):
 
     min_index = pd.concat([top_loop_scores, top_model_scores])["rmsd"].idxmin()
     rmsd_min_index = df["rmsd"].idxmin()
+    cdr3_min_index = df["cdr3_rmsd"].idxmin()
 
-    return min_index, rmsd_min_index
+    return min_index, rmsd_min_index, cdr3_min_index
 
 
 def plot_points_one_pdb(folder, pdb_folder, score_name):
@@ -165,7 +170,7 @@ def plot_points_one_pdb(folder, pdb_folder, score_name):
     """
 
     df = get_scores_data(pdb_folder)
-    top_scores_index, rmsd_min_index = get_min_rmsd_by_score(df, score_name)
+    top_scores_index, rmsd_min_index, cdr3_min_index = get_min_rmsd_by_score(df, score_name)
 
     top_scores_min = df.iloc[top_scores_index]["rmsd"]
     rmsd_min = df.iloc[rmsd_min_index]["rmsd"]
@@ -275,15 +280,18 @@ def one_pdb_rmsd_scores(pdb_folder, score_name, min_func):
     """
 
     df = get_scores_data(pdb_folder)
-    top_scores_index, rmsd_min_index = min_func(df, score_name)
+    top_scores_index, rmsd_min_index, cdr3_min_index = min_func(df, score_name)
     top_scores_min = df.iloc[top_scores_index]["rmsd"]
     rmsd_min = df.iloc[rmsd_min_index]["rmsd"]
+    cdr3_rmsd_min = df.iloc[cdr3_min_index]["cdr3_rmsd"]
 
     pdb_name = os.path.basename(pdb_folder)
     output = pd.DataFrame({"PDB": [pdb_name], "SCORE_BEST_10": [df.iloc[top_scores_index][score_name]], "RMSD_BEST_10": [df.iloc[top_scores_index]["rmsd"]],
+                           "CDR1": [df.iloc[top_scores_index]["cdr1_rmsd"]], "CDR2": [df.iloc[top_scores_index]["cdr2_rmsd"]], "CDR3": [df.iloc[top_scores_index]["cdr3_rmsd"]],
                            "TYPE_BEST_10": [df.iloc[top_scores_index]["type"]], "SCORE_MIN_RMSD": [df.iloc[rmsd_min_index][score_name]],
-                           "MIN_RMSD": [df.iloc[rmsd_min_index]["rmsd"]], "TYPE_MIN_RMSD": [df.iloc[rmsd_min_index]["type"]],
-                           "DIFF_RMSD": [top_scores_min - rmsd_min]})
+                           "MIN_RMSD": [df.iloc[rmsd_min_index]["rmsd"]], "MIN_CDR1": [df.iloc[rmsd_min_index]["cdr1_rmsd"]], "MIN_CDR2": [df.iloc[rmsd_min_index]["cdr2_rmsd"]],
+                           "MIN_CDR3": [df.iloc[rmsd_min_index]["cdr3_rmsd"]], "TYPE_MIN_RMSD": [df.iloc[rmsd_min_index]["type"]],
+                           "DIFF_RMSD": [top_scores_min - rmsd_min], "MIN_CDR3_RMSD": cdr3_rmsd_min})
     return output
 
 
@@ -307,6 +315,30 @@ def plot_rmsd_vs_score(directory, n, score):
             n -= 1
 
 
+def summery_cdr3(directory):
+
+    mean_file_name = os.path.join(directory, "model_summery", "cdr3_mean.csv")
+    all_file_name = os.path.join(directory, "model_summery", "cdr3_all.csv")
+    with open(mean_file_name, 'w') as mean_file:
+        with open(all_file_name, "w") as all_file:
+            first_pdb = True
+            for file in os.listdir(directory):
+                pdb_folder = os.path.join(directory, file)
+                if os.path.isdir(pdb_folder) and os.path.exists(os.path.join(pdb_folder, "cdrs_dist")):
+                    df = pd.read_csv(os.path.join(pdb_folder, "cdrs_dist"), sep=" ", header=None, names=CDRS_COL, usecols=[3,5,7,9,11,13,15,17])
+                    df.insert(0, column="pdb", value=[os.path.basename(pdb_folder)]*len(df["-1"]))
+
+                    df.to_csv(all_file, header=first_pdb, index=False)
+                    mean_series = pd.concat([pd.Series(os.path.basename(pdb_folder)), df.mean(axis=0)])
+                    pd.DataFrame(columns=mean_series.index, data=[mean_series]).to_csv(mean_file, header=first_pdb, index=False)
+                    first_pdb = False
+
+    plot = ggplot(pd.melt(pd.read_csv(mean_file_name), id_vars=['0'], value_vars=CDRS_COL), aes(x="factor(variable)", y="value")) + geom_boxplot(color="blue") + \
+           geom_jitter(alpha=0.3, color="skyblue", size=0.3) + ggtitle("CDR3 frame vs distance from ref") + labs(x="cdr3 frame", y="distance from ref (Angstram)")
+    plot.save(os.path.join(args.directory, PLOTS_PATH, "cdr3_frames_boxplot"))
+
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -328,7 +360,6 @@ if __name__ == '__main__':
         if not os.path.isdir(os.path.join(args.directory, "model_summery")):
             os.mkdir(os.path.join(args.directory, "model_summery"))
         summery_rmsd_scores(args.directory, args.score)  # saves summery into csv file
-
-
+        summery_cdr3(args.directory)
 
 

@@ -27,8 +27,6 @@
 
 
 5. ideas for improvments: 
-	- change the template selection (choose based of amino acids properties)
 	- add deep learning for cdr3 modedling?
 	- add confidence level for the program results?
-	- use 'environment–specific substitution scores' (ESSS) for template selection.
-	- model each cdr sepretly (with different templates)	  
+	- model each cdr sepretly (with different templates)
