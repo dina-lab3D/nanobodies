@@ -466,8 +466,9 @@ for template in template_list:
     chain = template[1]
     pdb = code + '.pdb'
     pdb_chain = code + chain + '.pdb'
-    os.remove(pdb)
-    os.remove(pdb_chain)
+    if os.path.exists(pdb):
+        os.remove(pdb)
+        os.remove(pdb_chain)
 
 # clean up other files
 os.remove("NANO.rsr")
