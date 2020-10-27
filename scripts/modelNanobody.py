@@ -240,7 +240,8 @@ print ("Args: seq_file=" + fasta_file_name + " test_mode=" + str(filter_similar_
 nb_sequence = get_sequence(fasta_file_name)
 nb_sequence_id = get_sequence_id(fasta_file_name)
 write_ali_file(nb_sequence)
-#[cdr1_start, cdr1_end] = cdr_annotation.find_cdr1(nb_sequence) TODO- fix the cdr1 bug
+
+[cdr1_start, cdr1_end] = cdr_annotation.find_cdr1(nb_sequence)  # TODO- fix the cdr1 bug
 [cdr2_start, cdr2_end] = cdr_annotation.find_cdr2(nb_sequence)
 [cdr3_start, cdr3_end] = cdr_annotation.find_cdr3(nb_sequence)
 
@@ -248,7 +249,6 @@ write_ali_file(nb_sequence)
 run_blast(fasta_file_name)
 blast_file_name = fasta_file_name + ".blast"
 template_list = get_templates_blast_xml(blast_file_name, filter = filter_similar_sequences)
-
 
 # align templates using modeller salign function
 log.verbose()
@@ -274,7 +274,6 @@ for template in template_list:
         template_list2.append(code)
     except OSError:  # pdb file not found...
         continue
-
 
 for (weights, write_fit, whole) in (((1., 0., 0., 0., 1., 0.), False, True),
                                     ((1., 0.5, 1., 1., 1., 0.), False, True),
@@ -305,12 +304,10 @@ aln.salign(output='', max_gap_length=10,
            gap_penalties_1d=(-450, 0),
            gap_penalties_2d=(0.35, 1.2, 0.9, 1.2, 0.6, 8.6, 1.2, 0., 0.),
            similarity_flag=True, local_alignment=True)
-
 aln.write(file='nano-mult.ali', alignment_format='PIR')
 
 # scoring
 sp = soap_loop.Scorer()
-
 print ("TL",template_list2)
 
 # build 10 models with modeller automodel
@@ -340,6 +337,8 @@ for n in range(1, model_num+1):
 
 print (best_model, best_score)
 
+
+
 # loop remodeling
 # Create a new class based on 'loopmodel' so that we can redefine
 # select_loop_atoms (necessary)
@@ -355,16 +354,69 @@ m = MyLoop(env,
 m.loop.starting_model= 1           # index of the first loop model
 m.loop.ending_model  = loop_model_num   # index of the last loop model
 m.loop.md_level = refine.slow      # loop refinement method; this yields
-                                   # models quickly but of low quality;
-                                   # use refine.slow for better models
+# models quickly but of low quality;
+# use refine.slow for better models
 m.make()
+
+
+class MyLoop2(loopmodel):
+    # This routine picks the residues to be refined by loop modeling
+    def select_loop_atoms(self):
+        return selection(self.residue_range(cdr3_start+1, cdr3_end-2)) # focus
+
+m2 = MyLoop2(env,
+           inimodel=best_model, # initial model of the target
+           sequence='NANO')          # code of the target
+
+m2.loop.starting_model= loop_model_num + 1           # index of the first loop model
+m2.loop.ending_model  = loop_model_num*2   # index of the last loop model
+m2.loop.md_level = refine.slow      # loop refinement method; this yields
+# models quickly but of low quality;
+# use refine.slow for better models
+m2.make()
+
+
+# loop remodeling
+# Create a new class based on 'loopmodel' so that we can redefine
+# select_loop_atoms (necessary)
+# class MyLoop(loopmodel):
+#
+#     def __init__(self, start, end):
+#         self.start = cdr3_start + start
+#         self.end = cdr3_end + end
+#         super().__init__(env,
+#                          inimodel=best_model, # initial model of the target
+#                          sequence='NANO')
+#     # This routine picks the residues to be refined by loop modeling
+#
+#     def select_loop_atoms(self):
+#         return selection(self.residue_range(self.start, self.end)) # focus      # TODO - do both lengths
+#
+# # long frame for cdr3
+# m = MyLoop(-1, 2)
+# m.loop.starting_model= 1           # index of the first loop model
+# m.loop.ending_model  = loop_model_num   # index of the last loop model
+# m.loop.md_level = refine.slow      # loop refinement method; this yields
+#                                    # models quickly but of low quality;
+#                                    # use refine.slow for better models
+# m.make()
+#
+# # short frame for cdr3
+# m2 = MyLoop(1, -2)
+# m2.loop.starting_model= loop_model_num + 1           # index of the first loop model
+# m2.loop.ending_model  = loop_model_num*2   # index of the last loop model
+# m2.loop.md_level = refine.slow      # loop refinement method; this yields
+#                                     # models quickly but of low quality;
+#                                     # use refine.slow for better models
+# m2.make()
+
 
 
 # renumber for calculating cdrs rmsd (same length of models...)
 if os.path.isfile("ref.pdb"):
     subprocess.run(renumber + " ref.pdb > ref_renumber.pdb", shell=True)
 
-    #subprocess.run(get_frag_chain + " ref_renumber.pdb H " + str(cdr1_start) + " " + str(cdr1_end) + " > ref_cdr1.pdb", shell=True)
+    subprocess.run(get_frag_chain + " ref_renumber.pdb H " + str(cdr1_start) + " " + str(cdr1_end) + " > ref_cdr1.pdb", shell=True)  # TODO- fix the cdr1 bug
     subprocess.run(get_frag_chain + " ref_renumber.pdb H " + str(cdr2_start) + " " + str(cdr2_end) + " > ref_cdr2.pdb", shell=True)
     subprocess.run(get_frag_chain + " ref_renumber.pdb H " + str(cdr3_start) + " " + str(cdr3_end) + " > ref_cdr3.pdb", shell=True)
 
@@ -396,11 +448,11 @@ for n in range(1, model_num+1):
 
         subprocess.run(rmsd_align + " ref.pdb" + " " + model_name, shell=True)  # align to get rmsd of cdr without cheating...
 
-        #  subprocess.run(get_frag_chain + " " + model_name.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr1_start) + " " + str(cdr1_end) + " > temp_cdr1.pdb", shell=True)
+        subprocess.run(get_frag_chain + " " + model_name.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr1_start) + " " + str(cdr1_end) + " > temp_cdr1.pdb", shell=True)  # TODO- fix the cdr1 bug
         subprocess.run(get_frag_chain + " " + model_name.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr2_start) + " " + str(cdr2_end) + " > temp_cdr2.pdb", shell=True)
         subprocess.run(get_frag_chain + " " + model_name.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr3_start) + " " + str(cdr3_end) + " > temp_cdr3.pdb", shell=True)
 
-        #  cdr1_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr1.pdb temp_cdr1.pdb | tail -n1 ", shell=True).strip())
+        cdr1_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr1.pdb temp_cdr1.pdb | tail -n1 ", shell=True).strip())  # TODO- fix the cdr1 bug
         cdr2_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr2.pdb temp_cdr2.pdb | tail -n1 ", shell=True).strip())
         cdr3_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr3.pdb temp_cdr3.pdb | tail -n1 ", shell=True).strip())
 
@@ -414,7 +466,7 @@ for n in range(1, model_num+1):
             " cdr1-rmsd: " + str(cdr1_rmsd) + " cdr2-rmsd: " + str(cdr2_rmsd) + " cdr3-rmsd: " + str(cdr3_rmsd) + "\n")
 
 # score loops
-for i in range(1, loop_model_num+1):
+for i in range(1, (loop_model_num*2)+1):
     # read model file
     code = "NANO.BL%04d0001.pdb" % i
     mdl = complete_pdb(env, code)
@@ -437,11 +489,11 @@ for i in range(1, loop_model_num+1):
 
     subprocess.run(rmsd_align + " ref.pdb" + " " + code, shell=True)  # align to get rmsd of cdr without cheating...
 
-    #subprocess.run(get_frag_chain + " " + code.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr1_start) + " " + str(cdr1_end) + " > temp_cdr1.pdb", shell=True)
+    subprocess.run(get_frag_chain + " " + code.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr1_start) + " " + str(cdr1_end) + " > temp_cdr1.pdb", shell=True)  # TODO- fix the cdr1 bug
     subprocess.run(get_frag_chain + " " + code.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr2_start) + " " + str(cdr2_end) + " > temp_cdr2.pdb", shell=True)
     subprocess.run(get_frag_chain + " " + code.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr3_start) + " " + str(cdr3_end) + " > temp_cdr3.pdb", shell=True)
 
-    #cdr1_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr1.pdb temp_cdr1.pdb | tail -n1 ", shell=True).strip())
+    cdr1_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr1.pdb temp_cdr1.pdb | tail -n1 ", shell=True).strip())  # TODO- fix the cdr1 bug
     cdr2_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr2.pdb temp_cdr2.pdb | tail -n1 ", shell=True).strip())
     cdr3_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr3.pdb temp_cdr3.pdb | tail -n1 ", shell=True).strip())
 
@@ -455,7 +507,7 @@ for i in range(1, loop_model_num+1):
 
 # clean cdrs files
 if os.path.isfile("ref.pdb"):
-    # os.remove("temp_cdr1.pdb")
+    os.remove("temp_cdr1.pdb")  # TODO- fix the cdr1 bug
     os.remove("temp_cdr2.pdb")
     os.remove("temp_cdr3.pdb")
     os.remove("ref_renumber.pdb")
