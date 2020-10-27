@@ -6,13 +6,13 @@ import re
 
 
 # max memory for each batch
-MEMORY = "10000m"
+MEMORY = "8000m"
 
 # max time for each batch
 TIME = "8:0:0"
 
 # paths to scripts and programs that are used in PyDock
-BUILD_PARAM = "/cs/staff/dina/projects2/PatchDock/buildParams.pl "
+BUILD_PARAM = "/cs/staff/dina/projects2/PatchDock/buildParams.pl  "  # TODO - change if want params with restrections (to /cs/usr/tomer.cohen13/nanobodies/COVID_19/PatchDock/buildParams.pl)
 GET_CHAIN = "~dina/utils/getChain.Linux "
 PATCH_DOCK = "/cs/staff/dina/projects2/PatchDock/patch_dock.Linux "
 PATCH_DOCK_TRANS = "/cs/staff/dina/projects2/PatchDock/PatchDockOut2Trans.pl "
@@ -28,7 +28,7 @@ INTRO = "#!/bin/tcsh\n" \
         "#SBATCH -c1\n" \
         "#SBATCH --time=" + TIME + "\n"
 
-SPIKE_PDB = "/cs/usr/tomer.cohen13/lab/nanobodies/COVID_19/6vxx.pdb "
+SPIKE_PDB = "/cs/usr/tomer.cohen13/lab/nanobodies/COVID_19/S1.pdb "  # TODO - change if want different Antigen
 
 
 def intro(script_file):
