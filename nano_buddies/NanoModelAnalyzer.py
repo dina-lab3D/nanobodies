@@ -61,10 +61,10 @@ def generate_rmsd_graph(folder, data, name):
     data["rmsd"] = pd.to_numeric(data["rmsd"])  # cast to float
     data["length"] = pd.to_numeric(data["length"])  # cast to float
 
-    plot = ggplot(data, aes(x="factor(length)", y="rmsd")) + geom_boxplot(color="blue") + \
-           geom_jitter(alpha=0.7, color="skyblue") + \
+    plot = ggplot(data, aes(x="factor(length)", y="rmsd")) + geom_boxplot(color="black") + \
+           geom_jitter(alpha=0.7, color="black", size=0.2) + \
            ggtitle("RMSD VS. length for " + name + " results") + labs(x="length", y="RMSD")
-    plot.save(os.path.join(folder, PLOTS_PATH, "rmsd_boxplot_" + name))
+    plot.save(os.path.join(folder, PLOTS_PATH, "rmsd_boxplot_" + name), dpi=1000)
 
 
 def generate_final_scores(folder_path):
@@ -192,7 +192,7 @@ def plot_points_one_pdb(folder, pdb_folder, score_name):
            geom_text(aes(y=df.iloc[top_scores_index][score_name], x=top_scores_min, label="%.2f" % top_scores_min), size=8, ha="right", va="top") + \
            geom_text(aes(y=df.iloc[rmsd_min_index][score_name], x=rmsd_min, label="%.2f" % rmsd_min), size=8, ha="right", va="top")
 
-    plot.save(os.path.join(folder, PLOTS_PATH, pdb_name + "_" + score_name + "_plot"))
+    plot.save(os.path.join(folder, PLOTS_PATH, pdb_name + "_" + score_name + "_plot"), dpi=1000)
 
 
 def plot_summery_scores(folder, input_file, score):
@@ -203,16 +203,33 @@ def plot_summery_scores(folder, input_file, score):
     left_of_line_best_10_rmsd= len(df[df['RMSD_BEST_10'] < 2]["RMSD_BEST_10"])
     left_of_line_min_rmsd = len(df[df['MIN_RMSD'] < 2]["MIN_RMSD"])
 
+    # rmsd
     plot = ggplot(df) + geom_point(aes(x="RMSD_BEST_10", y="SCORE_BEST_10", color="TYPE_BEST_10"), alpha=0.7) + \
-           geom_vline(xintercept=2, linetype='dotted', color="red", show_legend=True) + \
-           ggtitle("BEST SCORE RMSD vs " + score.replace("_", " ").upper() + " (left of line=" + str(left_of_line_best_10_rmsd) + ")")
+           geom_vline(xintercept=2, linetype='dotted', color="red", show_legend=True) + labs(x="RMSD", y="Soap score")+\
+           ggtitle("RMSD of best score vs " + score.replace("_", " ") + " (left of line=" + str(left_of_line_best_10_rmsd) + ")")
 
     plot2 = ggplot(df) + geom_point(aes(x="MIN_RMSD", y="SCORE_MIN_RMSD", color="TYPE_MIN_RMSD"), alpha=0.7) + \
-           geom_vline(xintercept=2, linetype='dotted', color="red", show_legend=True) + \
-            ggtitle("MIN RMSD vs " + score.replace("_", " ").upper() + " (left of line=" + str(left_of_line_min_rmsd) + ")")
+           geom_vline(xintercept=2, linetype='dotted', color="red", show_legend=True) + labs(x="RMSD", y="Soap Score")+\
+            ggtitle("Min RMSD vs " + score.replace("_", " ") + " (left of line=" + str(left_of_line_min_rmsd) + ")")
 
-    plot.save(os.path.join(folder, PLOTS_PATH, name))
-    plot2.save(os.path.join(folder, PLOTS_PATH, "summery_min_rmsd_" + score))
+    plot.save(os.path.join(folder, PLOTS_PATH, name), dpi=1000)
+    plot2.save(os.path.join(folder, PLOTS_PATH, "summery_min_rmsd_" + score), dpi=1000)
+
+    # cdrs
+    for i in ["1","2","3"]:
+
+        left_of_line_best_10_rmsd_cdr= len(df[df['CDR' + i] < 2]["CDR" + i])
+        left_of_line_min_rmsd_cdr = len(df[df['MIN_CDR' + i] < 2]["MIN_CDR" + i])
+
+        plot3 = ggplot(df) + geom_point(aes(x="CDR" + i, y="SCORE_BEST_10", color="TYPE_BEST_10"), alpha=0.7) + \
+               geom_vline(xintercept=2, linetype='dotted', color="red", show_legend=True) + labs(x="RMSD", y="Soap score")+ \
+               ggtitle("CDR" + i + " RMSD of best score vs " + score.replace("_", " ") + " (left of line=" + str(left_of_line_best_10_rmsd_cdr) + ")")
+
+        plot4 = ggplot(df) + geom_point(aes(x="MIN_CDR" + i, y="SCORE_MIN_RMSD", color="TYPE_MIN_RMSD"), alpha=0.7) + \
+            geom_vline(xintercept=2, linetype='dotted', color="red", show_legend=True) + labs(x="RMSD", y="Soap Score")+ \
+            ggtitle("Min CDR" + i + " RMSD vs " + score.replace("_", " ") + " (left of line=" + str(left_of_line_min_rmsd_cdr) + ")")
+        plot3.save(os.path.join(folder, PLOTS_PATH, name + '_cdr' + i), dpi=1000)
+        plot4.save(os.path.join(folder, PLOTS_PATH, "summery_min_rmsd_" + score + "_cdr" + i), dpi=1000)
 
 
 def summery_rmsd_scores(directory, score):
@@ -235,10 +252,35 @@ def summery_rmsd_scores(directory, score):
                     one_pdb_rmsd_scores(pdb_folder, score, get_min_rmsd_by_score).to_csv(output_file_10, header=first_pdb, index=False)
                     one_pdb_rmsd_scores(pdb_folder, score, get_min_rmsd_by_type_score).to_csv(output_file_5_5, header=first_pdb, index=False)
                     first_pdb = False
+
     plot_summery_scores(directory, summery_best_10, score)
     plot_summery_scores(directory, summery_best_5_by_type, score)
 
+    plot_boxplot_cdrs_rmsd(directory, summery_best_10)
+    plot_boxplot_cdrs_rmsd(directory, summery_best_5_by_type)
+
     summery_differences(directory, score, summery_best_10, summery_best_5_by_type)
+
+
+def plot_boxplot_cdrs_rmsd(folder, input_file):
+    """
+
+    :param folder:
+    :param input_file:
+    :param score:
+    :return:
+    """
+    df = pd.read_csv(input_file, usecols=[2,3,4,5]).rename(columns={"RMSD_BEST_10": "ALL"}).melt(value_vars=["ALL","CDR1","CDR2","CDR3"])
+    print(df)
+    name = os.path.basename(input_file).split(".")[0]
+
+    plot = ggplot(df, aes(x="factor(variable)", y="value")) + geom_boxplot(color="black") + \
+           geom_jitter(alpha=0.7, color="black", size=0.2) + \
+           ggtitle("RMSD of Nanobodies CDRs") + labs(x="Region", y="RMSD")
+    plot.save(os.path.join(folder, PLOTS_PATH,name + "_cdrs_rmsd_boxplot"), dpi=1000)
+
+
+
 
 
 def summery_differences(directory, score_name, summery_best_10_path, summery_best_5_by_type_path):
@@ -333,9 +375,9 @@ def summery_cdr3(directory):
                     pd.DataFrame(columns=mean_series.index, data=[mean_series]).to_csv(mean_file, header=first_pdb, index=False)
                     first_pdb = False
 
-    plot = ggplot(pd.melt(pd.read_csv(mean_file_name), id_vars=['0'], value_vars=CDRS_COL), aes(x="factor(variable)", y="value")) + geom_boxplot(color="blue") + \
-           geom_jitter(alpha=0.3, color="skyblue", size=0.3) + ggtitle("CDR3 frame vs distance from ref") + labs(x="cdr3 frame", y="distance from ref (Angstram)")
-    plot.save(os.path.join(args.directory, PLOTS_PATH, "cdr3_frames_boxplot"))
+    plot = ggplot(pd.melt(pd.read_csv(mean_file_name), id_vars=['0'], value_vars=CDRS_COL), aes(x="factor(variable)", y="value")) + geom_boxplot(color="black") + \
+           geom_jitter(alpha=0.3, color="black", size=0.2) + ggtitle("CDR3 frame vs distance from ref") + labs(x="cdr3 frame", y="distance from ref (Angstram)")
+    plot.save(os.path.join(args.directory, PLOTS_PATH, "cdr3_frames_boxplot"), dpi=1000)
 
 
 

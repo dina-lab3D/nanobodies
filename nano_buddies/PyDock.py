@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 
 # max memory for each batch
-MEMORY = "10000m"
+MEMORY = "8000m"
 
 # max time for each batch
 TIME = "8:0:0"
