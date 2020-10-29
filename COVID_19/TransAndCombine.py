@@ -6,7 +6,8 @@ import re
 from tqdm import tqdm
 
 PDB_TRANS = "~dina/utils/pdb_trans "
-SPIKE_PDB = "/cs/usr/tomer.cohen13/lab/nanobodies/COVID_19/6vxx.pdb "
+SPIKE_PDB = "/cs/usr/tomer.cohen13/lab/nanobodies/COVID_19/S1.pdb "  # TODO change if want another antigen
+
 
 def get_trans_pdb(folder):
     pdb_name = os.path.basename(folder)

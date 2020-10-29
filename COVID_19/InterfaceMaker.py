@@ -5,7 +5,7 @@ import re
 import pandas as pd
 
 INTERFACE = "/cs/labs/dina/tomer.cohen13/nanobodies/epiDock/interface "
-HEADER = "/cs/usr/tomer.cohen13/lab/nanobodies/COVID_19/header.csv"
+HEADER = "/cs/usr/tomer.cohen13/lab/nanobodies/COVID_19/header_s1.csv"
 
 
 def get_interface(folder):
@@ -13,7 +13,7 @@ def get_interface(folder):
     print(folder)
     df = None
     if os.path.exists("nanobody_trans_0.pdb"):
-        subprocess.run(INTERFACE + " ABC H 6 nanobody_trans_*.pdb", shell=True)
+        subprocess.run(INTERFACE + " A H 6 nanobody_trans_*.pdb", shell=True)
         df = pd.read_csv("epi.csv", header=None)
     os.chdir("..")
     return df

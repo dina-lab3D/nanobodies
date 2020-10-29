@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
 
   std::cout << epitope.size() << std::endl;
   std::ofstream ofile("epi.csv");
-  int numberOfChains  = 3;// TODO: change back to 1, add as option later
+  int numberOfChains  = 1;// TODO: change back to 1, add as option later
   int range = epitope.size()/numberOfChains;
   int molNum = argc -4;
   for(int i=0; i<range; i++) {
