@@ -14,6 +14,15 @@ AA_DICT = {"A": 0, "C": 1, "D": 2, "E": 3, "F": 4, "G": 5, "H": 6, "I": 7, "K": 
 
 
 def calc_dist(pep, cdr2_start, cdr2_end, cdr3_start, cdr3_end):
+    """
+    calculates the distances between the cdr2 C-alpha atoms and cdr3 start and end atoms
+    :param pep: peptide object
+    :param cdr2_start: int
+    :param cdr2_end: int
+    :param cdr3_start: int
+    :param cdr3_end: int
+    :return: dist array1, dist array2
+    """
 
     dist1 = []
     dist2 = []
@@ -28,6 +37,15 @@ def calc_dist(pep, cdr2_start, cdr2_end, cdr3_start, cdr3_end):
 
 
 def calc_angles(pep, cdr2_start, cdr2_end, cdr3_start, cdr3_end):
+    """
+    calculates the angles between the cdr2 C-alpha atoms and cdr3 start and end N, C-alpha atoms
+    :param pep: peptide object
+    :param cdr2_start: int
+    :param cdr2_end: int
+    :param cdr3_start: int
+    :param cdr3_end: int
+    :return: angle array1, angle array2
+    """
 
     angle1 = []
     angle2 = []
@@ -42,6 +60,15 @@ def calc_angles(pep, cdr2_start, cdr2_end, cdr3_start, cdr3_end):
 
 
 def get_dist_angle_matrix(pep, cdr2_start, cdr2_end, cdr3_start, cdr3_end):
+    """
+
+    :param pep:
+    :param cdr2_start:
+    :param cdr2_end:
+    :param cdr3_start:
+    :param cdr3_end:
+    :return:
+    """
 
     cdr2_len = (cdr2_end+1 - cdr2_start)
     cdr2_pad = (CDR_MAX_LENGTH - cdr2_len) // 2
@@ -60,6 +87,11 @@ def get_dist_angle_matrix(pep, cdr2_start, cdr2_end, cdr3_start, cdr3_end):
 
 
 def generate_input(pdb):
+    """
+
+    :param pdb:
+    :return:
+    """
 
     model = PDBParser().get_structure(pdb, pdb)[0]
     pep = PPBuilder().build_peptides(model)[0]

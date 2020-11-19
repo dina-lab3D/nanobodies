@@ -20,13 +20,19 @@ def get_dist(pep, start, end, pad=0):
     :param pad:
     :return:
     """
-    ca_atoms = pep.get_ca_list()[start:end+1]
+    residues = pep[start:end+1]
     dist = np.zeros((CDR_MAX_LENGTH, CDR_MAX_LENGTH))
-    for i in range(len(ca_atoms)):
-        for j in range(len(ca_atoms)):
+    for i in range(len(residues)):
+        for j in range(len(residues)):
             if i == j:
                 continue
-            dist[i+pad][j+pad] = (ca_atoms[i] - ca_atoms[j])
+            c1 = 'CB'
+            c2 = 'CB'
+            if 'CB' not in residues[i]:  # GLY
+                c1 = 'CA'
+            if 'CB' not in residues[j]:  # GLY
+                c2 = 'CA'
+            dist[i+pad][j+pad] = (residues[i][c1] - residues[j][c2])
     return dist
 
 
@@ -46,7 +52,7 @@ def get_theta(pep, start, end, pad=0):
         for j in range(len(residues)):
             if i == j:
                 continue
-            if residues[i].get_resname() == 'GLY':
+            if residues[i].get_resname() == 'GLY':   # TODO: make zero?
                 continue
             atom = "CB"
             if residues[j].get_resname() == 'GLY':
@@ -72,7 +78,7 @@ def get_phi(pep, start, end, pad=0):
         for j in range(len(residues)):
             if i == j:
                 continue
-            if residues[i].get_resname() == 'GLY':
+            if residues[i].get_resname() == 'GLY':   # TODO: make zero?
                 continue
             atom = "CB"
             if residues[j].get_resname() == 'GLY':
@@ -98,7 +104,7 @@ def get_omega(pep, start, end, pad=0):
         for j in range(len(residues)):
             if i == j:
                 continue
-            if residues[i].get_resname() == 'GLY' or residues[j].get_resname() == 'GLY':
+            if residues[i].get_resname() == 'GLY' or residues[j].get_resname() == 'GLY':    # TODO: make zero?
                 continue
             omega[i+pad][j+pad] = calc_dihedral(residues[i]["CA"].get_vector(), residues[i]["CB"].get_vector(),
                                                 residues[j]["CB"].get_vector(), residues[j]["CA"].get_vector())
@@ -116,7 +122,6 @@ def generate_label(pdb):
     seq = str(pep.get_sequence())
 
     [cdr3_start, cdr3_end] = find_cdr3(seq)
-    [cdr2_start, cdr2_end] = find_cdr2(seq)
 
     # for padding the result matrix with zeros
     pad = (CDR_MAX_LENGTH - (cdr3_end+1 - cdr3_start)) // 2

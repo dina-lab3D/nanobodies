@@ -4,7 +4,7 @@ import os
 import subprocess
 
 # max memory for each batch
-MEMORY = "8000m"
+MEMORY = "7000m"
 
 # max time for each batch
 TIME = "8:0:0"
