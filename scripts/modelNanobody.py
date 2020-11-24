@@ -345,7 +345,7 @@ print (best_model, best_score)
 class MyLoop(loopmodel):
     # This routine picks the residues to be refined by loop modeling
     def select_loop_atoms(self):
-        return selection(self.residue_range(cdr3_start-1, cdr3_end+2)) # focus
+        return selection(self.residue_range(cdr3_start-1, cdr3_end+2), self.residue_range(cdr1_start-1, cdr1_end+2)) # focus  TODO: cdr1 loop modeling
 
 m = MyLoop(env,
            inimodel=best_model, # initial model of the target
@@ -416,7 +416,7 @@ m2.make()
 if os.path.isfile("ref.pdb"):
     subprocess.run(renumber + " ref.pdb > ref_renumber.pdb", shell=True)
 
-    subprocess.run(get_frag_chain + " ref_renumber.pdb H " + str(cdr1_start) + " " + str(cdr1_end) + " > ref_cdr1.pdb", shell=True)  # TODO- fix the cdr1 bug
+    subprocess.run(get_frag_chain + " ref_renumber.pdb H " + str(cdr1_start) + " " + str(cdr1_end) + " > ref_cdr1.pdb", shell=True)
     subprocess.run(get_frag_chain + " ref_renumber.pdb H " + str(cdr2_start) + " " + str(cdr2_end) + " > ref_cdr2.pdb", shell=True)
     subprocess.run(get_frag_chain + " ref_renumber.pdb H " + str(cdr3_start) + " " + str(cdr3_end) + " > ref_cdr3.pdb", shell=True)
 
@@ -448,11 +448,11 @@ for n in range(1, model_num+1):
 
         subprocess.run(rmsd_align + " ref.pdb" + " " + model_name, shell=True)  # align to get rmsd of cdr without cheating...
 
-        subprocess.run(get_frag_chain + " " + model_name.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr1_start) + " " + str(cdr1_end) + " > temp_cdr1.pdb", shell=True)  # TODO- fix the cdr1 bug
+        subprocess.run(get_frag_chain + " " + model_name.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr1_start) + " " + str(cdr1_end) + " > temp_cdr1.pdb", shell=True)
         subprocess.run(get_frag_chain + " " + model_name.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr2_start) + " " + str(cdr2_end) + " > temp_cdr2.pdb", shell=True)
         subprocess.run(get_frag_chain + " " + model_name.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr3_start) + " " + str(cdr3_end) + " > temp_cdr3.pdb", shell=True)
 
-        cdr1_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr1.pdb temp_cdr1.pdb | tail -n1 ", shell=True).strip())  # TODO- fix the cdr1 bug
+        cdr1_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr1.pdb temp_cdr1.pdb | tail -n1 ", shell=True).strip())
         cdr2_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr2.pdb temp_cdr2.pdb | tail -n1 ", shell=True).strip())
         cdr3_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr3.pdb temp_cdr3.pdb | tail -n1 ", shell=True).strip())
 
@@ -489,11 +489,11 @@ for i in range(1, (loop_model_num*2)+1):
 
     subprocess.run(rmsd_align + " ref.pdb" + " " + code, shell=True)  # align to get rmsd of cdr without cheating...
 
-    subprocess.run(get_frag_chain + " " + code.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr1_start) + " " + str(cdr1_end) + " > temp_cdr1.pdb", shell=True)  # TODO- fix the cdr1 bug
+    subprocess.run(get_frag_chain + " " + code.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr1_start) + " " + str(cdr1_end) + " > temp_cdr1.pdb", shell=True)
     subprocess.run(get_frag_chain + " " + code.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr2_start) + " " + str(cdr2_end) + " > temp_cdr2.pdb", shell=True)
     subprocess.run(get_frag_chain + " " + code.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr3_start) + " " + str(cdr3_end) + " > temp_cdr3.pdb", shell=True)
 
-    cdr1_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr1.pdb temp_cdr1.pdb | tail -n1 ", shell=True).strip())  # TODO- fix the cdr1 bug
+    cdr1_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr1.pdb temp_cdr1.pdb | tail -n1 ", shell=True).strip())
     cdr2_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr2.pdb temp_cdr2.pdb | tail -n1 ", shell=True).strip())
     cdr3_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr3.pdb temp_cdr3.pdb | tail -n1 ", shell=True).strip())
 
@@ -507,7 +507,7 @@ for i in range(1, (loop_model_num*2)+1):
 
 # clean cdrs files
 if os.path.isfile("ref.pdb"):
-    os.remove("temp_cdr1.pdb")  # TODO- fix the cdr1 bug
+    os.remove("temp_cdr1.pdb")
     os.remove("temp_cdr2.pdb")
     os.remove("temp_cdr3.pdb")
     os.remove("ref_renumber.pdb")

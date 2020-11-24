@@ -49,7 +49,7 @@ def get_names_best_loops_models(pdb_folder):
     df = get_scores_data(pdb_folder)
     if NANO_NET:
         top_names = pd.DataFrame.sort_values(df, by="cdr2_rmsd")[0:NANO_NUM]["name"]
-        top_names["name"] = ["model_" + str(i) for i in range(NANO_NUM)]
+        # top_names["name"] = ["model_" + str(i) for i in range(NANO_NUM)]
         top_names.to_csv(os.path.join(pdb_folder, "top_models_rmsd.csv"))
         return top_names.tolist(),[]
     top_loop_names = pd.DataFrame.sort_values(df[df["type"] == "LOOP"], by=SCORE)[0:TOP_LOOP_N]["name"]

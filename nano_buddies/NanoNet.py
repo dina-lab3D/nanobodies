@@ -1,7 +1,12 @@
 
 import tensorflow as tf
-from tensorflow.keras import layers, models
+from tensorflow.keras import layers
+import pickle
+import numpy as np
+import matplotlib.pyplot as plt
+import argparse
 
+DIM = 2
 
 
 def d1_net_architecture():
@@ -37,19 +42,20 @@ def d1_net_architecture():
     distances = layers.Conv2D(1, 17, activation="linear", padding="same")(x_3)
     distance_T = layers.Permute((2,1,3))(distances)
     distances = layers.Add()([distances, distance_T])
-    distances = layers.Reshape((32,32))(distances)
+    distances = layers.Reshape((32,32), name="distances")(distances)
 
     omegas = layers.Conv2D(1, 17, activation="linear", padding="same")(x_3)
     omega_T = layers.Permute((2,1,3))(omegas)
     omegas = layers.Add()([omegas, omega_T])
-    omegas = layers.Reshape((32,32))(omegas)
+    omegas = layers.Concatenate(name="omegas")([tf.math.cos(omegas), tf.math.sin(omegas)])
 
     thetas = layers.Conv2D(1, 17, activation="linear", padding="same")(x_3)
-    thetas = layers.Reshape((32,32))(thetas)
+    thetas = layers.Concatenate(name="thetas")([tf.math.cos(thetas), tf.math.sin(thetas)])
 
     phis = layers.Conv2D(1, 17, activation="linear", padding="same")(x_3)
-    phis = layers.Reshape((32,32))(phis)
-    tf.keras.Model(input, [distances, omegas, thetas, phis], name="halufit").summary()
+    phis = layers.Concatenate(name="phis")([tf.math.cos(phis), tf.math.sin(phis)])
+
+    return tf.keras.Model(input, [distances, omegas, thetas, phis], name="NanoNet1d")
 
 
 def d2_net_architecture(variant=2):
@@ -113,7 +119,7 @@ def d2_net_architecture(variant=2):
 
     distance_t = layers.Permute((2,1,3))(distances)
     distances = layers.Add()([distances, distance_t])  # for symmetry
-    distances = layers.Reshape((32,32))(distances)  # for 1D again
+    distances = layers.Reshape((32,32), name="distances")(distances)  # for 1D again
 
     #  omega
     omegas = layers.Conv2D(16, (5,5), activation="relu", padding="same")(dropout_layer)
@@ -122,25 +128,74 @@ def d2_net_architecture(variant=2):
 
     omega_t = layers.Permute((2,1,3))(omegas)
     omegas = layers.Add()([omegas, omega_t])  # for symmetry
-    omegas = layers.Reshape((32,32))(omegas)  # for 1D again
+    omegas = layers.Concatenate(name="omegas")([tf.math.cos(omegas), tf.math.sin(omegas)])
 
     # theta
     thetas = layers.Conv2D(16, (5,5), activation="relu", padding="same")(dropout_layer)
     for loop in [4,1]:
         thetas = layers.Conv2D(loop, (5,5), activation="relu", padding="same")(thetas)
-    thetas = layers.Reshape((32,32))(thetas)
+    thetas = layers.Concatenate(name="thetas")([tf.math.cos(thetas), tf.math.sin(thetas)])
 
     # phi
     phis = layers.Conv2D(16, (5,5), activation="relu", padding="same")(dropout_layer)
     for loop in [4,1]:
         phis = layers.Conv2D(loop, (5,5), activation="relu", padding="same")(phis)
-    phis = layers.Reshape((32,32))(phis)
+    phis = layers.Concatenate(name="phis")([tf.math.cos(phis), tf.math.sin(phis)])
 
-    tf.keras.Model(input_layer, [distances, omegas, thetas, phis], name="halufit").summary()
-
-
+    return tf.keras.Model(input_layer, [distances, omegas, thetas, phis], name="NanoNet2d")
 
 
+def plot_loss(history):
 
-d1_net_architecture()
-d2_net_architecture(1)
+    ig, axes = plt.subplots(1, 4, figsize=(15,3))
+    axes[0].plot(history.history['distances_loss'], label='Training loss')
+    axes[0].plot(history.history['val_distances_loss'], label='Validation loss')
+    axes[0].legend()
+    corr = np.correlate(history.history['distances_loss'], history.history['val_distances_loss']).item()
+    axes[0].set_title("Distance loss, correlation: %.1f"%corr)
+
+    axes[1].plot(history.history['omegas_loss'], label='Training loss')
+    axes[1].plot(history.history['val_omegas_loss'], label='Validation loss')
+    axes[1].legend()
+    corr = np.correlate(history.history['omegas_loss'], history.history['val_omegas_loss']).item()
+    axes[1].set_title("Omega loss, correlation: %.1f"%corr)
+
+    axes[2].plot(history.history['thetas_loss'], label='Training loss')
+    axes[2].plot(history.history['val_thetas_loss'], label='Validation loss')
+    axes[2].legend()
+    corr = np.correlate(history.history['thetas_loss'], history.history['val_thetas_loss']).item()
+    axes[2].set_title("Theta loss, correlation: %.3f"%corr)
+
+    axes[3].plot(history.history['phis_loss'], label='Training loss')
+    axes[3].plot(history.history['val_phis_loss'], label='Validation loss')
+    axes[3].legend()
+    corr = np.correlate(history.history['phis_loss'], history.history['val_phis_loss']).item()
+    _=axes[3].set_title("Phi loss, correlation: %.3f"%corr)
+
+if __name__ == '__main__':
+
+    if DIM == 2:
+        model = d2_net_architecture(2)
+    else:
+        model = d1_net_architecture()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("X_train", help="pickle file path")
+    parser.add_argument("Y_train", help="pickle file path")
+    args = parser.parse_args()
+
+    with open(args.X_train, "rb") as input_file:
+        X = pickle.load(input_file)
+    with open(args.Y_train, "rb") as feature_file:
+        Y = pickle.load(feature_file)
+    Y = [Y[:,0,0,:], Y[:,1,:,:].reshape((-1,32,32,2)), Y[:,2,:,:].reshape((-1,32,32,2)), Y[:,3,:,:].reshape((-1,32,32,2))]
+
+    if DIM == 2:
+        X = X.reshape(-1, 32, 21, 3)
+
+    # lr = tf.keras.optimizers.schedules.ExponentialDecay(0.01, decay_steps=100000, decay_rate=0.9)
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01, decay=0.8), loss='mse', metrics=['accuracy'])
+    net_history = model.fit(X, Y, validation_split=0.1, epochs=10, verbose=1)
+
+    plot_loss(net_history)
+

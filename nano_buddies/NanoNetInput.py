@@ -4,13 +4,15 @@ import os
 import sys
 import numpy as np
 import pickle
-
+from tqdm import tqdm
 sys.path.insert(1, '/cs/usr/tomer.cohen13/lab/nanobodies/scripts')
 from cdr_annotation import *
 
-CDR_MAX_LENGTH = 30
+CDR_MAX_LENGTH = 32
 AA_DICT = {"A": 0, "C": 1, "D": 2, "E": 3, "F": 4, "G": 5, "H": 6, "I": 7, "K": 8, "L": 9, "M": 10, "N": 11, "P": 12,
            "Q": 13, "R": 14, "S": 15, "T": 16, "W": 17, "Y": 18, "V": 19, "-": 20}
+
+DIM = 2
 
 
 def calc_dist(pep, cdr2_start, cdr2_end, cdr3_start, cdr3_end):
@@ -27,7 +29,7 @@ def calc_dist(pep, cdr2_start, cdr2_end, cdr3_start, cdr3_end):
     dist1 = []
     dist2 = []
     cdr3_start_atom = pep[cdr3_start -1]["CA"]
-    cdr3_end_atom = pep[cdr3_end + 1]["CA"]
+    cdr3_end_atom = pep[cdr3_end ]["CA"]
 
     for residue in pep[cdr2_start:cdr2_end+1]:
         dist1.append(cdr3_start_atom - residue["CA"])
@@ -50,7 +52,7 @@ def calc_angles(pep, cdr2_start, cdr2_end, cdr3_start, cdr3_end):
     angle1 = []
     angle2 = []
     cdr3_start_resi = pep[cdr3_start -1]
-    cdr3_end_resi = pep[cdr3_end + 1]
+    cdr3_end_resi = pep[cdr3_end ]
 
     for residue in pep[cdr2_start:cdr2_end+1]:
         angle1.append(calc_angle(cdr3_start_resi["N"].get_vector(), cdr3_start_resi["CA"].get_vector(), residue["CA"].get_vector()))
@@ -92,8 +94,9 @@ def generate_input(pdb):
     :param pdb:
     :return:
     """
-
-    model = PDBParser().get_structure(pdb, pdb)[0]
+    if not os.path.exists(os.path.join(pdb, "model_0.pdb")):
+        return None
+    model = PDBParser().get_structure(pdb, os.path.join(pdb, "model_0.pdb"))[0]
     pep = PPBuilder().build_peptides(model)[0]
     seq = str(pep.get_sequence())
 
@@ -111,9 +114,9 @@ def generate_input(pdb):
     for i in range(CDR_MAX_LENGTH):
         cdr2_matrix[i][AA_DICT[seq_cdr2[i]]] = 1
         cdr3_matrix[i][AA_DICT[seq_cdr3[i]]] = 1
-
+    if DIM == 1:
+        return cdr3_matrix
     dist_angle_matrix = get_dist_angle_matrix(pep, cdr2_start, cdr2_end, cdr3_start, cdr3_end)
-
     return np.stack([cdr2_matrix, cdr3_matrix, dist_angle_matrix], axis=0)
 
 
@@ -126,8 +129,16 @@ if __name__ == '__main__':
     os.chdir(args.directory)
 
     input_matrix = []
-    for pdb in os.listdir(os.getcwd()):
-        if pdb.endswith(".pdb"):
-            input_matrix.append(generate_input(pdb))
+    for directory in os.listdir(os.getcwd()):
+        if os.path.isdir(directory) and int(directory) <=5:  # directories 1,2,3,4...
+            os.chdir(directory)
+            for pdb in tqdm(os.listdir(os.getcwd())):
+                if os.path.isdir(pdb):
+                    pdb_input = generate_input(pdb)
+                    if pdb_input is None:
+                        print(directory + ": " + pdb + ", FAILED")
+                        continue
+                    input_matrix.append(pdb_input)
+            os.chdir("..")
     input_matrix = np.stack(input_matrix, axis=0)
-    pickle.dump(input_matrix, open("nn_input", "wb"))
+    pickle.dump(input_matrix, open("nn_input_" + str(DIM) + ".pkl", "wb"))
