@@ -345,7 +345,7 @@ print (best_model, best_score)
 class MyLoop(loopmodel):
     # This routine picks the residues to be refined by loop modeling
     def select_loop_atoms(self):
-        return selection(self.residue_range(cdr3_start-1, cdr3_end+2), self.residue_range(cdr1_start-1, cdr1_end+2)) # focus  TODO: cdr1 loop modeling
+        return selection(self.residue_range(cdr3_start+1, cdr3_end-2), self.residue_range(cdr1_start+1, cdr1_end-2)) # focus  TODO: cdr1 loop modeling
 
 m = MyLoop(env,
            inimodel=best_model, # initial model of the target
@@ -362,7 +362,7 @@ m.make()
 class MyLoop2(loopmodel):
     # This routine picks the residues to be refined by loop modeling
     def select_loop_atoms(self):
-        return selection(self.residue_range(cdr3_start+1, cdr3_end-2)) # focus
+        return selection(self.residue_range(cdr3_start-1, cdr3_end+2), self.residue_range(cdr1_start-1, cdr1_end+2)) # focus TODO: cdr1 loop modeling
 
 m2 = MyLoop2(env,
            inimodel=best_model, # initial model of the target
@@ -374,41 +374,6 @@ m2.loop.md_level = refine.slow      # loop refinement method; this yields
 # models quickly but of low quality;
 # use refine.slow for better models
 m2.make()
-
-
-# loop remodeling
-# Create a new class based on 'loopmodel' so that we can redefine
-# select_loop_atoms (necessary)
-# class MyLoop(loopmodel):
-#
-#     def __init__(self, start, end):
-#         self.start = cdr3_start + start
-#         self.end = cdr3_end + end
-#         super().__init__(env,
-#                          inimodel=best_model, # initial model of the target
-#                          sequence='NANO')
-#     # This routine picks the residues to be refined by loop modeling
-#
-#     def select_loop_atoms(self):
-#         return selection(self.residue_range(self.start, self.end)) # focus      # TODO - do both lengths
-#
-# # long frame for cdr3
-# m = MyLoop(-1, 2)
-# m.loop.starting_model= 1           # index of the first loop model
-# m.loop.ending_model  = loop_model_num   # index of the last loop model
-# m.loop.md_level = refine.slow      # loop refinement method; this yields
-#                                    # models quickly but of low quality;
-#                                    # use refine.slow for better models
-# m.make()
-#
-# # short frame for cdr3
-# m2 = MyLoop(1, -2)
-# m2.loop.starting_model= loop_model_num + 1           # index of the first loop model
-# m2.loop.ending_model  = loop_model_num*2   # index of the last loop model
-# m2.loop.md_level = refine.slow      # loop refinement method; this yields
-#                                     # models quickly but of low quality;
-#                                     # use refine.slow for better models
-# m2.make()
 
 
 

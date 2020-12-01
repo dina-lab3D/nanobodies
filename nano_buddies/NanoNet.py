@@ -5,8 +5,19 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 import argparse
+from sklearn.model_selection import train_test_split
+import seaborn as sns
 
 DIM = 2
+DIALETED_RESNET_BLOCKS = 2
+VARIANT = 1
+TEST_SIZE = 0.023
+
+
+def reshape_y(y):
+
+    return [y[:,0,0,:], y[:,1,:,:].reshape((-1,32,32,2)), y[:,2,:,:].reshape((-1,32,32,2)), y[:,3,:,:].reshape((-1,32,32,2))]
+
 
 
 def d1_net_architecture():
@@ -103,10 +114,11 @@ def d2_net_architecture(variant=2):
     conv_layer_t = layers.Permute((2,1,3))(conv_layer)
     loop_layer = layers.Concatenate()([conv_layer, conv_layer_t])
 
-    for loop in range(5):  # dilated ResNet
-        loop_conv_layer = layers.Conv2D(64, (5,5), activation="relu", dilation_rate=2**loop, padding="same")(loop_layer)
-        loop_conv_layer = layers.Conv2D(64, (5,5), dilation_rate=2**loop , padding="same")(loop_conv_layer)  # TODO: add activation?
-        loop_layer = layers.BatchNormalization()(loop_conv_layer)
+    for block in range(DIALETED_RESNET_BLOCKS):
+        for loop in range(5):  # dilated ResNet
+            loop_conv_layer = layers.Conv2D(64, (5,5), activation="relu", dilation_rate=2**loop, padding="same")(loop_layer)
+            loop_conv_layer = layers.Conv2D(64, (5,5), dilation_rate=2**loop , padding="same")(loop_conv_layer)  # TODO: add activation?
+            loop_layer = layers.BatchNormalization()(loop_conv_layer)
 
     relu_layer = layers.ReLU()(loop_layer)
     dropout_layer = layers.Dropout(0.2)(relu_layer)
@@ -171,31 +183,47 @@ def plot_loss(history):
     axes[3].legend()
     corr = np.correlate(history.history['phis_loss'], history.history['val_phis_loss']).item()
     _=axes[3].set_title("Phi loss, correlation: %.3f"%corr)
-
+    plt.show()
 if __name__ == '__main__':
-
-    if DIM == 2:
-        model = d2_net_architecture(2)
-    else:
-        model = d1_net_architecture()
 
     parser = argparse.ArgumentParser()
     parser.add_argument("X_train", help="pickle file path")
     parser.add_argument("Y_train", help="pickle file path")
     args = parser.parse_args()
 
+    if DIM == 2:
+        model = d2_net_architecture(VARIANT)
+    else:
+        model = d1_net_architecture()
+
     with open(args.X_train, "rb") as input_file:
         X = pickle.load(input_file)
     with open(args.Y_train, "rb") as feature_file:
         Y = pickle.load(feature_file)
-    Y = [Y[:,0,0,:], Y[:,1,:,:].reshape((-1,32,32,2)), Y[:,2,:,:].reshape((-1,32,32,2)), Y[:,3,:,:].reshape((-1,32,32,2))]
 
     if DIM == 2:
         X = X.reshape(-1, 32, 21, 3)
 
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=TEST_SIZE)
+    Y_train, Y_test = reshape_y(Y_train), reshape_y(Y_test)
+
+
     # lr = tf.keras.optimizers.schedules.ExponentialDecay(0.01, decay_steps=100000, decay_rate=0.9)
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01, decay=0.8), loss='mse', metrics=['accuracy'])
-    net_history = model.fit(X, Y, validation_split=0.1, epochs=10, verbose=1)
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01, decay=0.97), loss=['mse', 'mse','mse','mse'])  # TODO: use huber loss on angles?
+    net_history = model.fit(X_train, Y_train, validation_split=0.1, epochs=10, verbose=1)
 
     plot_loss(net_history)
+    # tf.keras.utils.plot_model(model, to_file="model.png")
 
+    model.save("model1.tf")
+
+    loss = model.evaluate(X_test, Y_test)
+    print("test loss: {}".format(loss))
+
+    fig = plt.figure()
+    r = sns.heatmap(Y_test[0][0,0,:,:], cmap='BuPu')
+
+    fig2 = plt.figure()
+    z = model.predict(X_test[0,:,:,:])
+    r2 = sns.heatmap(z[0], cmap='BuPu')
+    plt.show()
