@@ -130,16 +130,9 @@ def generate_label(pdb):
     :return:
     """
 
-    if not os.path.exists(os.path.join(pdb, "ref.pdb")):
-        return None
+
     model = PDBParser().get_structure(pdb, os.path.join(pdb, "ref.pdb"))[0]["H"]
     # pep = PPBuilder().build_peptides(model, aa_only=False)[0]
-
-    for i in model.get_residues():
-        if not i.has_id("N"):
-            print("no side chains")
-            return None
-        break
 
     seq, aa_residues = get_seq(model)
 
