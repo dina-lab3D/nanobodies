@@ -132,7 +132,7 @@ def generate_input(pdb):
     if DIM == 1:
         return cdr3_matrix
     dist_angle_matrix = get_dist_angle_matrix(aa_residues, cdr1_start, cdr1_end, cdr3_start, cdr3_end)
-    return np.stack([cdr1_matrix, cdr3_matrix, dist_angle_matrix], axis=0)
+    return np.dstack([cdr1_matrix, cdr3_matrix, dist_angle_matrix])
 
 
 if __name__ == '__main__':
