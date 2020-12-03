@@ -38,7 +38,7 @@ def get_dist(pep_residues, start, end, pad=0):
             if 'CB' not in residues[j]:  # GLY
                 c2 = 'CA'
             dist[i+pad][j+pad] = (residues[i][c1] - residues[j][c2])
-    return np.array([dist, dist])
+    return np.dstack([dist, dist])
 
 
 def get_theta(pep_residues, start, end, pad=0):
@@ -66,7 +66,7 @@ def get_theta(pep_residues, start, end, pad=0):
             cos_theta[i+pad][j+pad] = np.cos(angle)
             sin_theta[i+pad][j+pad] = np.sin(angle)
 
-    return np.array([cos_theta, sin_theta])
+    return np.dstack([cos_theta, sin_theta])
 
 
 def get_phi(pep_residues, start, end, pad=0):
@@ -93,7 +93,7 @@ def get_phi(pep_residues, start, end, pad=0):
 
             cos_phi[i+pad][j+pad] = np.cos(angle)
             sin_phi[i+pad][j+pad] = np.sin(angle)
-    return np.array([cos_phi, sin_phi])
+    return np.dstack([cos_phi, sin_phi])
 
 
 def get_omega(pep_residues, start, end, pad=0):
@@ -120,7 +120,7 @@ def get_omega(pep_residues, start, end, pad=0):
             cos_omega[i+pad][j+pad] = np.cos(angle)
             sin_omega[i+pad][j+pad] = np.sin(angle)
 
-    return np.array([cos_omega, sin_omega])
+    return np.dstack([cos_omega, sin_omega])
 
 
 def generate_label(pdb):
