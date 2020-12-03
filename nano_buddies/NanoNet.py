@@ -9,15 +9,14 @@ from sklearn.model_selection import train_test_split
 import seaborn as sns
 
 DIM = 2
-DIALETED_RESNET_BLOCKS = 2
-VARIANT = 1
+DIALETED_RESNET_BLOCKS = 5
+VARIANT = 2
 TEST_SIZE = 0.023
 
 
 def reshape_y(y):
 
-    return [y[:,0,0,:], y[:,1,:,:].reshape((-1,32,32,2)), y[:,2,:,:].reshape((-1,32,32,2)), y[:,3,:,:].reshape((-1,32,32,2))]
-
+    return [y[:,0,:,:,0], y[:,1,:,:,:], y[:,2,:,:,:], y[:,3,:,:,:]]
 
 
 def d1_net_architecture():
@@ -184,6 +183,8 @@ def plot_loss(history):
     corr = np.correlate(history.history['phis_loss'], history.history['val_phis_loss']).item()
     _=axes[3].set_title("Phi loss, correlation: %.3f"%corr)
     plt.show()
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -201,29 +202,51 @@ if __name__ == '__main__':
     with open(args.Y_train, "rb") as feature_file:
         Y = pickle.load(feature_file)
 
-    if DIM == 2:
-        X = X.reshape(-1, 32, 21, 3)
-
     X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=TEST_SIZE)
+
     Y_train, Y_test = reshape_y(Y_train), reshape_y(Y_test)
 
-
     # lr = tf.keras.optimizers.schedules.ExponentialDecay(0.01, decay_steps=100000, decay_rate=0.9)
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01, decay=0.97), loss=['mse', 'mse','mse','mse'])  # TODO: use huber loss on angles?
-    net_history = model.fit(X_train, Y_train, validation_split=0.1, epochs=10, verbose=1)
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01, decay=0.98), loss=['mse', 'mse','mse','mse'], loss_weights=[0.05,1,1,1])  # TODO: use huber loss on angles?
+    net_history = model.fit(X_train, Y_train, validation_split=0.05, epochs=10, verbose=1, batch_size=32)
 
     plot_loss(net_history)
-    # tf.keras.utils.plot_model(model, to_file="model.png")
 
-    model.save("model1.tf")
+
+    model.save("model2")
 
     loss = model.evaluate(X_test, Y_test)
     print("test loss: {}".format(loss))
 
-    fig = plt.figure()
-    r = sns.heatmap(Y_test[0][0,0,:,:], cmap='BuPu')
+    # model = tf.keras.models.load_model("model1")
 
-    fig2 = plt.figure()
-    z = model.predict(X_test[0,:,:,:])
-    r2 = sns.heatmap(z[0], cmap='BuPu')
+    r = sns.heatmap(Y_test[0][0,:,:], cmap='BuPu')
+    plt.show()
+
+    z = model.predict(X_test[0:2,:,:,:])[0][0]
+    r2 = sns.heatmap(z, cmap='BuPu')
+    plt.show()
+
+    r3 = sns.heatmap(tf.math.atan2(x=Y_test[3][0,:,:,0], y=Y_test[3][0,:,:,1]), cmap='BuPu')
+    plt.show()
+
+    z2 = model.predict(X_test[0:2,:,:,:])[3][0]
+    r5 = sns.heatmap(tf.math.atan2(x=z2[:,:,0],y=z2[:,:,1]), cmap='BuPu')
+
+    plt.show()
+
+
+    r6 = sns.heatmap(Y_test[0][1,:,:], cmap='BuPu')
+    plt.show()
+
+    z = model.predict(X_test[0:2,:,:,:])[0][1]
+    r9 = sns.heatmap(z, cmap='BuPu')
+    plt.show()
+
+    r89 = sns.heatmap(tf.math.atan2(x=Y_test[3][1,:,:,0], y=Y_test[3][1,:,:,1]), cmap='BuPu')
+    plt.show()
+
+    z2 = model.predict(X_test[0:2,:,:,:])[3][1]
+    r99 = sns.heatmap(tf.math.atan2(x=z2[:,:,0],y=z2[:,:,1]), cmap='BuPu')
+
     plt.show()

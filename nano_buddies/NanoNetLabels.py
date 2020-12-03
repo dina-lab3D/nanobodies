@@ -13,7 +13,7 @@ from cdr_annotation import *
 
 
 CDR_MAX_LENGTH = 32
-TEST = True
+TEST = False
 
 
 def get_dist(pep_residues, start, end, pad=0):

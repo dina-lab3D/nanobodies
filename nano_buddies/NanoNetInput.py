@@ -19,7 +19,7 @@ AA_DICT = {"A": 0, "C": 1, "D": 2, "E": 3, "F": 4, "G": 5, "H": 6, "I": 7, "K": 
            "Q": 13, "R": 14, "S": 15, "T": 16, "W": 17, "Y": 18, "V": 19, "-": 20, "X": 20}
 
 DIM = 2
-TEST = True
+TEST = False
 
 
 def calc_dist(residues, cdr1_start, cdr1_end, cdr3_start, cdr3_end):
