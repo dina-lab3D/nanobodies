@@ -9,8 +9,8 @@ from sklearn.model_selection import train_test_split
 import seaborn as sns
 
 DIM = 2
-DIALETED_RESNET_BLOCKS = 5
-VARIANT = 2
+DIALETED_RESNET_BLOCKS = 10
+VARIANT = 1
 TEST_SIZE = 0.023
 
 
@@ -204,11 +204,15 @@ if __name__ == '__main__':
 
     X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=TEST_SIZE)
 
+
+    pickle.dump(X_test, open("test_X.pkl", "wb"))
+    pickle.dump(Y_test, open("test_Y.pkl", "wb"))
+
     Y_train, Y_test = reshape_y(Y_train), reshape_y(Y_test)
 
     # lr = tf.keras.optimizers.schedules.ExponentialDecay(0.01, decay_steps=100000, decay_rate=0.9)
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01, decay=0.98), loss=['mse', 'mse','mse','mse'], loss_weights=[0.05,1,1,1])  # TODO: use huber loss on angles?
-    net_history = model.fit(X_train, Y_train, validation_split=0.05, epochs=10, verbose=1, batch_size=32)
+    net_history = model.fit(X_train, Y_train, validation_split=0.05, epochs=50, verbose=1, batch_size=32)
 
     plot_loss(net_history)
 
