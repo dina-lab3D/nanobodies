@@ -11,7 +11,41 @@ import seaborn as sns
 DIM = 2
 DIALETED_RESNET_BLOCKS = 10
 VARIANT = 1
+EPOCHS = 100
+LR = 0.01
 TEST_SIZE = 0.023
+
+
+class PolynomialDecay:
+    def __init__(self, maxEpochs=EPOCHS, initAlpha=LR, power=1):
+        # store the maximum number of epochs, base learning rate,
+        # and power of the polynomial
+        self.maxEpochs = maxEpochs
+        self.initAlpha = initAlpha
+        self.power = power
+
+    def __call__(self, epoch):
+        # compute the new learning rate based on polynomial decay
+        decay = (1 - (epoch / float(self.maxEpochs))) ** self.power
+        alpha = self.initAlpha * decay
+        # return the new learning rate
+        return float(alpha)
+
+
+class StepDecay:
+    def __init__(self, initAlpha=LR, factor=0.75, dropEvery=5):
+        # store the base initial learning rate, drop factor, and
+        # epochs to drop every
+        self.initAlpha = initAlpha
+        self.factor = factor
+        self.dropEvery = dropEvery
+
+    def __call__(self, epoch):
+        # compute the learning rate for the current epoch
+        exp = np.floor((1 + epoch) / self.dropEvery)
+        alpha = self.initAlpha * (self.factor ** exp)
+        # return the learning rate
+        return float(alpha)
 
 
 def reshape_y(y):
@@ -132,28 +166,28 @@ def d2_net_architecture(variant=2):
     distances = layers.Add()([distances, distance_t])  # for symmetry
     distances = layers.Reshape((32,32), name="distances")(distances)  # for 1D again
 
-    #  omega
-    omegas = layers.Conv2D(16, (5,5), activation="relu", padding="same")(dropout_layer)
-    for loop in [4,1]:
-        omegas = layers.Conv2D(loop, (5,5), activation="relu", padding="same")(omegas)
+    # #  omega
+    # omegas = layers.Conv2D(16, (5,5), activation="relu", padding="same")(dropout_layer)
+    # for loop in [4,1]:
+    #     omegas = layers.Conv2D(loop, (5,5), activation="relu", padding="same")(omegas)
+    #
+    # omega_t = layers.Permute((2,1,3))(omegas)
+    # omegas = layers.Add()([omegas, omega_t])  # for symmetry
+    # omegas = layers.Concatenate(name="omegas")([tf.math.cos(omegas), tf.math.sin(omegas)])
+    #
+    # # theta
+    # thetas = layers.Conv2D(16, (5,5), activation="relu", padding="same")(dropout_layer)
+    # for loop in [4,1]:
+    #     thetas = layers.Conv2D(loop, (5,5), activation="relu", padding="same")(thetas)
+    # thetas = layers.Concatenate(name="thetas")([tf.math.cos(thetas), tf.math.sin(thetas)])
+    #
+    # # phi
+    # phis = layers.Conv2D(16, (5,5), activation="relu", padding="same")(dropout_layer)
+    # for loop in [4,1]:
+    #     phis = layers.Conv2D(loop, (5,5), activation="relu", padding="same")(phis)
+    # phis = layers.Concatenate(name="phis")([tf.math.cos(phis), tf.math.sin(phis)])
 
-    omega_t = layers.Permute((2,1,3))(omegas)
-    omegas = layers.Add()([omegas, omega_t])  # for symmetry
-    omegas = layers.Concatenate(name="omegas")([tf.math.cos(omegas), tf.math.sin(omegas)])
-
-    # theta
-    thetas = layers.Conv2D(16, (5,5), activation="relu", padding="same")(dropout_layer)
-    for loop in [4,1]:
-        thetas = layers.Conv2D(loop, (5,5), activation="relu", padding="same")(thetas)
-    thetas = layers.Concatenate(name="thetas")([tf.math.cos(thetas), tf.math.sin(thetas)])
-
-    # phi
-    phis = layers.Conv2D(16, (5,5), activation="relu", padding="same")(dropout_layer)
-    for loop in [4,1]:
-        phis = layers.Conv2D(loop, (5,5), activation="relu", padding="same")(phis)
-    phis = layers.Concatenate(name="phis")([tf.math.cos(phis), tf.math.sin(phis)])
-
-    return tf.keras.Model(input_layer, [distances, omegas, thetas, phis], name="NanoNet2d")
+    return tf.keras.Model(input_layer, distances, name="NanoNet2d")
 
 
 def plot_loss(history):
@@ -204,53 +238,58 @@ if __name__ == '__main__':
 
     X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=TEST_SIZE)
 
-
     pickle.dump(X_test, open("test_X.pkl", "wb"))
     pickle.dump(Y_test, open("test_Y.pkl", "wb"))
 
     Y_train, Y_test = reshape_y(Y_train), reshape_y(Y_test)
 
-    # lr = tf.keras.optimizers.schedules.ExponentialDecay(0.01, decay_steps=100000, decay_rate=0.9)
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01, decay=0.98), loss=['mse', 'mse','mse','mse'], loss_weights=[0.05,1,1,1])  # TODO: use huber loss on angles?
-    net_history = model.fit(X_train, Y_train, validation_split=0.05, epochs=50, verbose=1, batch_size=32)
+    poly_decay = tf.keras.callbacks.LearningRateScheduler(PolynomialDecay())
+    step_decay = tf.keras.callbacks.LearningRateScheduler(StepDecay())
+    platau_decay = tf.keras.callbacks.ReduceLROnPlateau(monitor="val_loss", factor=0.25, patience=5, verbose=1, min_delta=0.0001)
 
-    plot_loss(net_history)
+    #  only distance
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01, decay=0.0), loss="mse")
+    net_history = model.fit(X_train, Y_train[0], validation_split=0.05, epochs=50, verbose=1, batch_size=32, callbacks=[poly_decay])
 
 
+    #  all features
+    # model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01, decay=0.98), loss=['mse', 'mse','mse','mse'], loss_weights=[0.05,1,1,1])  # TODO: use huber loss on angles?
+    # net_history = model.fit(X_train, Y_train, validation_split=0.05, epochs=50, verbose=1, batch_size=32)
     model.save("model2")
+    # plot_loss(net_history)
 
-    loss = model.evaluate(X_test, Y_test)
+    loss = model.evaluate(X_test, Y_test[0])
     print("test loss: {}".format(loss))
 
     # model = tf.keras.models.load_model("model1")
 
-    r = sns.heatmap(Y_test[0][0,:,:], cmap='BuPu')
-    plt.show()
-
-    z = model.predict(X_test[0:2,:,:,:])[0][0]
-    r2 = sns.heatmap(z, cmap='BuPu')
-    plt.show()
-
-    r3 = sns.heatmap(tf.math.atan2(x=Y_test[3][0,:,:,0], y=Y_test[3][0,:,:,1]), cmap='BuPu')
-    plt.show()
-
-    z2 = model.predict(X_test[0:2,:,:,:])[3][0]
-    r5 = sns.heatmap(tf.math.atan2(x=z2[:,:,0],y=z2[:,:,1]), cmap='BuPu')
-
-    plt.show()
-
-
-    r6 = sns.heatmap(Y_test[0][1,:,:], cmap='BuPu')
-    plt.show()
-
-    z = model.predict(X_test[0:2,:,:,:])[0][1]
-    r9 = sns.heatmap(z, cmap='BuPu')
-    plt.show()
-
-    r89 = sns.heatmap(tf.math.atan2(x=Y_test[3][1,:,:,0], y=Y_test[3][1,:,:,1]), cmap='BuPu')
-    plt.show()
-
-    z2 = model.predict(X_test[0:2,:,:,:])[3][1]
-    r99 = sns.heatmap(tf.math.atan2(x=z2[:,:,0],y=z2[:,:,1]), cmap='BuPu')
-
-    plt.show()
+    # r = sns.heatmap(Y_test[0][0,:,:], cmap='BuPu')
+    # plt.show()
+    #
+    # z = model.predict(X_test[0:2,:,:,:])[0][0]
+    # r2 = sns.heatmap(z, cmap='BuPu')
+    # plt.show()
+    #
+    # r3 = sns.heatmap(tf.math.atan2(x=Y_test[3][0,:,:,0], y=Y_test[3][0,:,:,1]), cmap='BuPu')
+    # plt.show()
+    #
+    # z2 = model.predict(X_test[0:2,:,:,:])[3][0]
+    # r5 = sns.heatmap(tf.math.atan2(x=z2[:,:,0],y=z2[:,:,1]), cmap='BuPu')
+    #
+    # plt.show()
+    #
+    #
+    # r6 = sns.heatmap(Y_test[0][1,:,:], cmap='BuPu')
+    # plt.show()
+    #
+    # z = model.predict(X_test[0:2,:,:,:])[0][1]
+    # r9 = sns.heatmap(z, cmap='BuPu')
+    # plt.show()
+    #
+    # r89 = sns.heatmap(tf.math.atan2(x=Y_test[3][1,:,:,0], y=Y_test[3][1,:,:,1]), cmap='BuPu')
+    # plt.show()
+    #
+    # z2 = model.predict(X_test[0:2,:,:,:])[3][1]
+    # r99 = sns.heatmap(tf.math.atan2(x=z2[:,:,0],y=z2[:,:,1]), cmap='BuPu')
+    #
+    # plt.show()

@@ -13,7 +13,7 @@ from cdr_annotation import *
 
 
 CDR_MAX_LENGTH = 32
-TEST = False
+TEST = True
 
 
 def get_dist(pep_residues, start, end, pad=0):
@@ -176,7 +176,7 @@ if __name__ == '__main__':
                     feature_matrix.append(generate_label(pdb))
             os.chdir("..")
     feature_matrix = np.stack(feature_matrix, axis=0)
-    labels_file_name = "nn_labels_"
+    labels_file_name = "nn_labels"
     if TEST:
         labels_file_name += "_test"
     pickle.dump(feature_matrix, open(labels_file_name + ".pkl", "wb"))

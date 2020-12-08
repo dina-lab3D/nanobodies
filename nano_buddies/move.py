@@ -11,16 +11,24 @@ if __name__ == '__main__':
             os.chdir(folder_n)
             for pdb in tqdm(os.listdir(os.getcwd())):
                 os.chdir(pdb)
-                if os.path.exists("nanobodies.tar"):
-
-                    if os.path.exists("model_0.pdb"):
-                        df = pd.read_csv("top_models_rmsd.csv", header=None)[1]
-                        for i in range(10):
-                            os.rename("model_" + str(i) + ".pdb", df[i])
-                    subprocess.run("tar -xf nanobodies.tar", shell=True)
-                    subprocess.run("rm -f nanobodies.tar", shell=True)
+                if os.path.exists(pdb):
+                    os.chdir(pdb)
+                    subprocess.run("mv * ..", shell=True)
+                    os.chdir("..")
+                    subprocess.run("rm -rf " + pdb, shell=True)
                 os.chdir("..")
             os.chdir("..")
+
+#                if os.path.exists("nanobodies.tar"):
+#
+#                    if os.path.exists("model_0.pdb"):
+#                        df = pd.read_csv("top_models_rmsd.csv", header=None)[1]
+#                        for i in range(10):
+#                            os.rename("model_" + str(i) + ".pdb", df[i])
+#                    subprocess.run("tar -xf nanobodies.tar", shell=True)
+#                    subprocess.run("rm -f nanobodies.tar", shell=True)
+#                os.chdir("..")
+#            os.chdir("..")
 
 
 

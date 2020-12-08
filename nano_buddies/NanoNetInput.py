@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import pickle
 from tqdm import tqdm
+from NanoNetLabels import get_dist
 from NanoNetUtils import *
 import subprocess
 
@@ -19,7 +20,27 @@ AA_DICT = {"A": 0, "C": 1, "D": 2, "E": 3, "F": 4, "G": 5, "H": 6, "I": 7, "K": 
            "Q": 13, "R": 14, "S": 15, "T": 16, "W": 17, "Y": 18, "V": 19, "-": 20, "X": 20}
 
 DIM = 2
-TEST = False
+TEST = True
+OPTION = 2
+
+
+def calc_dist_option2(residues, cdr1_start, cdr1_end, cdr3_start, cdr3_end, pad):
+    """
+    :return:
+    """
+
+    cdr1_residues = residues[cdr1_start:cdr1_end+1]
+    dist = np.zeros((CDR_MAX_LENGTH, 21))
+    start = residues[cdr3_start-1]["CA"].get_vector()
+    end = residues[cdr3_end]["CA"].get_vector()
+    for i in range(len(cdr1_residues)):
+        for j in range(21):
+            c1 = 'CB'
+            if 'CB' not in cdr1_residues[i]:  # GLY
+                c1 = 'CA'
+            dist[i+pad][j] = (cdr1_residues[i][c1].get_vector() - (start + (end-start)**(j/(CDR_MAX_LENGTH-1)))).norm()
+    print(np.array(dist))
+    return np.array(dist)
 
 
 def calc_dist(residues, cdr1_start, cdr1_end, cdr3_start, cdr3_end):
@@ -131,7 +152,11 @@ def generate_input(pdb):
 
     if DIM == 1:
         return cdr3_matrix
-    dist_angle_matrix = get_dist_angle_matrix(aa_residues, cdr1_start, cdr1_end, cdr3_start, cdr3_end)
+    if OPTION == 1:
+        dist_angle_matrix = get_dist_angle_matrix(aa_residues, cdr1_start, cdr1_end, cdr3_start, cdr3_end)
+    else:  # OPTION == 2'
+        pad = (CDR_MAX_LENGTH - (cdr1_end+1 - cdr1_start)) // 2
+        dist_angle_matrix = calc_dist_option2(aa_residues, cdr1_start, cdr1_end, cdr3_start, cdr3_end, pad)
     return np.dstack([cdr1_matrix, cdr3_matrix, dist_angle_matrix])
 
 
@@ -157,7 +182,7 @@ if __name__ == '__main__':
                     input_matrix.append(generate_input(pdb))
             os.chdir("..")
     input_matrix = np.stack(input_matrix, axis=0)
-    input_file_name = "nn_input_" + str(DIM)
+    input_file_name = "nn_input_" + str(DIM) + "_op_" + str(OPTION)
     if TEST:
         input_file_name += "_test"
     pickle.dump(input_matrix, open(input_file_name + ".pkl", "wb"))
