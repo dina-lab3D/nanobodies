@@ -1,10 +1,6 @@
 import Bio.PDB
 import argparse
-import os
-import subprocess
-import re
 import pandas as pd
-import numpy as np
 
 
 def color(pdb, chains, csv):
@@ -26,7 +22,7 @@ def color(pdb, chains, csv):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("pdb", help="csv file containing the interface percentage")
+    parser.add_argument("pdb", help="pdb to color")
     parser.add_argument("chains", help="chains to color according to csv")
     parser.add_argument("csv", help="csv file containing the interface percentage")
     args = parser.parse_args()

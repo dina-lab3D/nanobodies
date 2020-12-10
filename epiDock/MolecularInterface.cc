@@ -61,7 +61,8 @@ void MolecularInterface::outputRasmol(const ChemMolecule& mol, const Interface& 
 
 void MolecularInterface::getReceptorInterfaceResidues(std::vector<double>& residues) const {
   if(residues.size() == 0) {
-    residues.insert(residues.begin(), mol1_.numberOfRes(), 0);
+    residues.insert(residues.begin(), 1000, 0);
+    //residues.insert(residues.begin(), mol1_.numberOfRes(), 0);  // TODO- change when done
   }
   //std::cout <<  mol1_.numberOfRes() << std::endl;
   for(unsigned int resIndex=0; resIndex<mol1_.numberOfRes(); resIndex++) {
@@ -69,7 +70,9 @@ void MolecularInterface::getReceptorInterfaceResidues(std::vector<double>& resid
       int atomIndex = mol1_.getFirstAtomEntryForResEntry(resIndex);
       int residueIndex = mol1_[atomIndex].residueIndex();
       //std::cout << resIndex << ":" << residueIndex  << " ";//<< std::endl;
-      residues[resIndex]++;
+
+      residues[residueIndex]++;
+      //residues[resIndex]++; TODO- change when done
     }
   }
   //  std::cout << std::endl;

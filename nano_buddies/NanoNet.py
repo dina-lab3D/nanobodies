@@ -17,7 +17,7 @@ TEST_SIZE = 0.023
 
 
 class PolynomialDecay:
-    def __init__(self, maxEpochs=EPOCHS, initAlpha=LR, power=1):
+    def __init__(self, maxEpochs=EPOCHS, initAlpha=LR, power=0.9):
         # store the maximum number of epochs, base learning rate,
         # and power of the polynomial
         self.maxEpochs = maxEpochs
@@ -249,7 +249,7 @@ if __name__ == '__main__':
 
     #  only distance
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01, decay=0.0), loss="mse")
-    net_history = model.fit(X_train, Y_train[0], validation_split=0.05, epochs=50, verbose=1, batch_size=32, callbacks=[poly_decay])
+    net_history = model.fit(X_train, Y_train[0], validation_split=0.05, epochs=EPOCHS, verbose=1, batch_size=32, callbacks=[poly_decay])
 
 
     #  all features
