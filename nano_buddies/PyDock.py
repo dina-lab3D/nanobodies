@@ -73,6 +73,7 @@ def cross_links_selector(pdb_name, xl_num, noise):
                              "low": [0] * len(xl_df.Atom2), "high": [25] * len(xl_df.Atom2)})
     xl_final.to_csv("dist_constraints", sep=" ", header=False, index=False)
 
+
 def intro(script_file):
     """
     writes the intro of the script file

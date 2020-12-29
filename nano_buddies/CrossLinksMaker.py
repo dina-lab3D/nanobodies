@@ -24,9 +24,10 @@ INTERFACE_XL = "/cs/staff/dina/libs/imp_build/bin/interface_cross_links "
 
 def make_cross_links(pdf_folder):
     """
-
-    :param pdf_folder:
-    :return:
+    makes cross links list using interface_cross_links (saves them in cxms_all.dat), then checks if the xl are
+    realistic using xlmtools
+    :param pdf_folder: the folder containing the antigen.pdb and ref.pdb
+    :return: None
     """
     os.chdir(pdf_folder)
     pdb_name = os.path.basename(pdf_folder) + ".pdb"
@@ -51,6 +52,7 @@ if __name__ == '__main__':
 
     """
     runs the make_cross_links() function on all the pdbs folders in the given directory. make sure to run from cluster
+    (hm/phoenix)
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("directory", help="directory path containing the pdb directories")

@@ -347,6 +347,19 @@ class MyLoop(loopmodel):
     def select_loop_atoms(self):
         return selection(self.residue_range(cdr3_start+1, cdr3_end-2), self.residue_range(cdr1_start+1, cdr1_end-2)) # focus  TODO: cdr1 loop modeling
 
+    def special_restraints(self, aln):
+
+
+
+        rsr = self.restraints
+        at = self.atoms
+
+        #       Restrain the specified CA-CA distance to 10 angstroms (st. dev.=0.1)
+        #       Use a harmonic potential and X-Y distance group.
+        rsr.add(forms.gaussian(group=physical.xy_distance,feature=features.distance(at['CA:35'],at['CA:40']),mean=10.0, stdev=0.1))
+
+
+
 m = MyLoop(env,
            inimodel=best_model, # initial model of the target
            sequence='NANO')          # code of the target
@@ -359,21 +372,21 @@ m.loop.md_level = refine.slow      # loop refinement method; this yields
 m.make()
 
 
-class MyLoop2(loopmodel):
-    # This routine picks the residues to be refined by loop modeling
-    def select_loop_atoms(self):
-        return selection(self.residue_range(cdr3_start-1, cdr3_end+2), self.residue_range(cdr1_start-1, cdr1_end+2)) # focus TODO: cdr1 loop modeling
-
-m2 = MyLoop2(env,
-           inimodel=best_model, # initial model of the target
-           sequence='NANO')          # code of the target
-
-m2.loop.starting_model= loop_model_num + 1           # index of the first loop model
-m2.loop.ending_model  = loop_model_num*2   # index of the last loop model
-m2.loop.md_level = refine.slow      # loop refinement method; this yields
-# models quickly but of low quality;
-# use refine.slow for better models
-m2.make()
+# class MyLoop2(loopmodel):
+#     # This routine picks the residues to be refined by loop modeling
+#     def select_loop_atoms(self):
+#         return selection(self.residue_range(cdr3_start-1, cdr3_end+2), self.residue_range(cdr1_start-1, cdr1_end+2)) # focus TODO: cdr1 loop modeling
+#
+# m2 = MyLoop2(env,
+#            inimodel=best_model, # initial model of the target
+#            sequence='NANO')          # code of the target
+#
+# m2.loop.starting_model= loop_model_num + 1           # index of the first loop model
+# m2.loop.ending_model  = loop_model_num*2   # index of the last loop model
+# m2.loop.md_level = refine.slow      # loop refinement method; this yields
+# # models quickly but of low quality;
+# # use refine.slow for better models
+# m2.make()
 
 
 
@@ -431,7 +444,7 @@ for n in range(1, model_num+1):
             " cdr1-rmsd: " + str(cdr1_rmsd) + " cdr2-rmsd: " + str(cdr2_rmsd) + " cdr3-rmsd: " + str(cdr3_rmsd) + "\n")
 
 # score loops
-for i in range(1, (loop_model_num*2)+1):
+for i in range(1, (loop_model_num)+1):  # change to range(1, (loop_model_num*2)+1) for loop modeling 2
     # read model file
     code = "NANO.BL%04d0001.pdb" % i
     mdl = complete_pdb(env, code)

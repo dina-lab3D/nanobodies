@@ -280,9 +280,6 @@ def plot_boxplot_cdrs_rmsd(folder, input_file):
     plot.save(os.path.join(folder, PLOTS_PATH,name + "_cdrs_rmsd_boxplot"), dpi=1000)
 
 
-
-
-
 def summery_differences(directory, score_name, summery_best_10_path, summery_best_5_by_type_path):
     """
 
@@ -380,7 +377,6 @@ def summery_cdr3(directory):
     plot.save(os.path.join(args.directory, PLOTS_PATH, "cdr3_frames_boxplot"), dpi=1000)
 
 
-
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -388,7 +384,7 @@ if __name__ == '__main__':
     parser.add_argument("score", help="score to use (dope_score/soap_score)")
     parser.add_argument("-b", "--boxplot", help="saves box plots", action="store_true")
     parser.add_argument("-p", "--points", help="saves points plots, gets number of pdbs to plot", type=int)
-    parser.add_argument("-s", "--summery", help="saves sumery plots nad creats summry csv", action="store_true")
+    parser.add_argument("-s", "--summery", help="saves sumery plots and creats summry csv", action="store_true")
 
     args = parser.parse_args()
     if not os.path.isdir(os.path.join(args.directory, PLOTS_PATH)):

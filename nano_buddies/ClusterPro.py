@@ -5,11 +5,14 @@ import re
 import subprocess
 from tqdm import tqdm
 
+
+# interface_cluster path
 CLUSTER = "/cs/labs/dina/tomer.cohen13/InterfaceClustering/interface_cluster.linux "
 
 
 def cluster(folder):
     """
+    runs interface_cluster on the antigen.pdb ref.pdb dock_data.csv file in folder, put the results in soap_score_cluster.res
     :param folder: the pdb folder (with dock_data.csv file)
     :return: None
     """

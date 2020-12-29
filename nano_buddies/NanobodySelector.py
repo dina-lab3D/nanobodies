@@ -25,11 +25,6 @@ TOP_MODEL_N = 5
 # score to use for choosing the best models
 SCORE = "soap_score"
 
-# for NanoNet training change to True
-NANO_NET = True
-NANO_NUM = 10
-
-
 
 def get_scores_data(pdb_folder):
     """
@@ -47,11 +42,6 @@ def get_names_best_loops_models(pdb_folder):
     :return: 2 lists ( with length = TOP_MODEL_N, TOP_LOOP_N)
     """
     df = get_scores_data(pdb_folder)
-    if NANO_NET:
-        top_names = pd.DataFrame.sort_values(df, by="cdr1_rmsd")[0:NANO_NUM]["name"]
-        # top_names["name"] = ["model_" + str(i) for i in range(NANO_NUM)]
-        top_names.to_csv(os.path.join(pdb_folder, "top_models_rmsd.csv"))
-        return top_names.tolist(),[]
     top_loop_names = pd.DataFrame.sort_values(df[df["type"] == "LOOP"], by=SCORE)[0:TOP_LOOP_N]["name"]
     top_model_names = pd.DataFrame.sort_values(df[df["type"] == "MODEL"], by=SCORE)[0:TOP_MODEL_N]["name"]
 
@@ -93,7 +83,7 @@ if __name__ == '__main__':
     """
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("directory", help="dirctory path containing the pdb directories")
+    parser.add_argument("directory", help="directory path containing the pdb directories")
     args = parser.parse_args()
     os.chdir(args.directory)
 
