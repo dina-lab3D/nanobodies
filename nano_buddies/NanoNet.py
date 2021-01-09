@@ -24,9 +24,10 @@ RESNET_BLOCKS = 3
 RESNET_SIZE = (17, 17)
 FIRST_RESNET_SIZE = (17, 17)
 DIALETED_RESNET_BLOCKS = 5
-DIALETED_RESNET_SIZE = (5,5)
+DIALETION = 4
+DIALETED_RESNET_SIZE = (5, 5)
 VARIANT = 1
-EPOCHS = 220
+EPOCHS = 200
 LR = 0.0005
 TEST_SIZE = 0.05
 BATCH = 32
@@ -39,7 +40,7 @@ END_ACTIVATION = "elu"
 LOSS = "mse"
 BINS = False
 POOL = False
-files_name = "best_model_again"
+files_name = "real_resnet_4"
 
 
 class PolynomialDecay:
@@ -92,72 +93,39 @@ def d2_net_architecture(variant=2):
     #  first ResNet block (or conv->relu->pool)
 
     #  variant 1 (ResNet blocks)
-    if variant == 1:
+    loop_layer = layers.Conv2D(32, FIRST_RESNET_SIZE, padding='same')(input_layer)
 
-        loop_layer = layers.Conv2D(32, FIRST_RESNET_SIZE, padding='same', name='Conv2D_1')(input_layer)
+    for i in range(RESNET_BLOCKS):
+        # for i in range(5):
+        conv_layer = layers.Conv2D(32, RESNET_SIZE, activation=ACTIVATION, padding='same')(loop_layer)
+        conv_layer = layers.Conv2D(32, RESNET_SIZE, padding='same')(conv_layer)
+        batch_layer = layers.BatchNormalization()(conv_layer)
+        loop_layer = layers.Add()([batch_layer, loop_layer])
+        loop_layer = layers.Activation(ACTIVATION)(loop_layer)
 
-        # for i in range(10):
-        #     conv_layer = layers.Conv2D(32, FIRST_RESNET_SIZE, activation=ACTIVATION,padding='same')(loop_layer)
-        #     conv_layer = layers.Conv2D(32, FIRST_RESNET_SIZE, padding='same')(conv_layer)
-        #     batch_layer = layers.BatchNormalization()(conv_layer)
-        #     loop_layer = layers.Add()([batch_layer, loop_layer])
-        #     loop_layer = layers.Activation(ACTIVATION)(loop_layer)
-        for i in range(RESNET_BLOCKS):
-            conv_layer = layers.Conv2D(32, RESNET_SIZE, activation=ACTIVATION, padding='same')(loop_layer)
-            conv_layer = layers.Conv2D(32, RESNET_SIZE, padding='same')(conv_layer)
-            batch_layer = layers.BatchNormalization()(conv_layer)
-            loop_layer = layers.Add()([batch_layer, loop_layer])
-            loop_layer = layers.Activation(ACTIVATION)(loop_layer)
-        if POOL:
-            conv_layer = layers.Conv2D(32, (5, 5), activation=ACTIVATION,padding='same')(loop_layer)
-            max_pool_layer = layers.MaxPooling2D((2, 2))(conv_layer)
-            conv_layer = layers.Conv2D(48, (5, 5), activation=ACTIVATION,padding='same')(max_pool_layer)
-            max_pool_layer = layers.MaxPooling2D((2, 2))(conv_layer)
-            conv_layer = layers.Conv2D(64, (5, 5), activation=ACTIVATION,padding='same')(max_pool_layer)
-            up_sampling_layer = layers.UpSampling2D((2, 2))(conv_layer)
-            conv_layer = layers.Conv2D(48, (5, 5), activation=ACTIVATION,padding='same')(up_sampling_layer)
-            up_sampling_layer = layers.UpSampling2D((2, 2))(conv_layer)
-            loop_layer = layers.Conv2D(32, (5, 5),padding='same')(up_sampling_layer)
-        # relu_layer = layers.ReLU()(loop_layer)
-        premut_layer = layers.Permute((1,3,2))(loop_layer)
+    # loop_layer = layers.Conv2D(3, FIRST_RESNET_SIZE, padding='same')(loop_layer)
+    # loop_layer = layers.BatchNormalization()(loop_layer)
+    # loop_layer = layers.Add()([input_layer, loop_layer])
+    # loop_layer = layers.Conv2D(32, FIRST_RESNET_SIZE, padding='same', activation='relu')(loop_layer)
 
-    #  variant 2 (conv->relu->pool)
-    elif variant == 2:
-
-        conv_layer = layers.Conv2D(32, (5,5), activation=ACTIVATION, padding='same', name='Conv2D_1')(input_layer)
-        max_pool_layer = layers.MaxPooling2D((2,2))(conv_layer)
-
-        conv_layer = layers.Conv2D(48, (5,5), activation=ACTIVATION, padding='same', name='Conv2D_2')(max_pool_layer)
-        max_pool_layer = layers.MaxPooling2D((2,2))(conv_layer)
-
-        conv_layer = layers.Conv2D(64, (5,5), activation=ACTIVATION, padding='same', name='Conv2D_3')(max_pool_layer)
-        up_sampling_layer = layers.UpSampling2D((2,2))(conv_layer)
-
-        conv_layer = layers.Conv2D(48, (5,5), activation=ACTIVATION, padding='same', name='Conv2D_4')(up_sampling_layer)
-        up_sampling_layer = layers.UpSampling2D((2,2))(conv_layer)
-
-        conv_layer = layers.Conv2D(32, (5,5), activation=ACTIVATION, padding='same', name='Conv2D_5')(up_sampling_layer)
-        premut_layer = layers.Permute((1,3,2))(conv_layer)
-
-    else:
-        raise ValueError
-
-    # premut_layer = layers.Dropout(0.2)(premut_layer)
-
+    premut_layer = layers.Permute((1,3,2))(loop_layer)
 
     # for kernel 64
     conv_layer = layers.Conv2D(32, (5,5), activation=ACTIVATION, padding='same', name='Conv2D_6')(premut_layer)
     conv_layer_t = layers.Permute((2,1,3))(conv_layer)
     loop_layer = layers.Concatenate()([conv_layer, conv_layer_t])
 
-
     for block in range(DIALETED_RESNET_BLOCKS):
-        for loop in range(5):  # dilated ResNet
+        for loop in range(DIALETION):  # dilated ResNet
             loop_conv_layer = layers.Conv2D(64, DIALETED_RESNET_SIZE, activation=ACTIVATION, dilation_rate=2**loop, padding="same")(loop_layer)
             loop_conv_layer = layers.Conv2D(64, DIALETED_RESNET_SIZE, dilation_rate=2**loop , padding="same")(loop_conv_layer)  # TODO: add activation?
             batch_layer = layers.BatchNormalization()(loop_conv_layer)
             loop_layer = layers.Add()([batch_layer, loop_layer])
             loop_layer = layers.Activation(ACTIVATION)(loop_layer)
+
+    # loop_layer = layers.Conv2D(21, DIALETED_RESNET_SIZE, padding='same')(loop_layer)
+    # loop_layer = layers.BatchNormalization()(loop_layer)
+    # loop_layer = layers.Add()([premut_layer, loop_layer])
 
     dropout_layer = layers.Dropout(DROPOUT)(loop_layer)
 
@@ -320,10 +288,10 @@ def plot_test(trained_model, test_X, test_Y):
                 sns.heatmap(test_Y[i][j,:,:,0], ax=axes[j][0],xticklabels=False, yticklabels=False, cbar=False)
                 sns.heatmap(pred_Y[j][i,:,:,0], ax=axes[j][1],xticklabels=False, yticklabels=False, cbar=False)
             else:
-                # sns.heatmap(test_Y[i][j,:,:,0], ax=axes[j][0],xticklabels=False, yticklabels=False, cbar=False)
-                # sns.heatmap(pred_Y[j][i,:,:,0], ax=axes[j][1],xticklabels=False, yticklabels=False, cbar=False)
-                sns.heatmap(tf.math.atan2(x=test_Y[i][j,:,:,0],y=test_Y[i][j,:,:,1]), ax=axes[j][0],xticklabels=False, yticklabels=False, cbar=False)
-                sns.heatmap(tf.math.atan2(x=pred_Y[j][i,:,:,0],y=pred_Y[j][i,:,:,1]), ax=axes[j][1],xticklabels=False, yticklabels=False, cbar=False)
+                sns.heatmap(test_Y[i][j,:,:,1], ax=axes[j][0],xticklabels=False, yticklabels=False, cbar=False)
+                sns.heatmap(pred_Y[j][i,:,:,1], ax=axes[j][1],xticklabels=False, yticklabels=False, cbar=False)
+                # sns.heatmap(tf.math.atan2(x=test_Y[i][j,:,:,0],y=test_Y[i][j,:,:,1]), ax=axes[j][0],xticklabels=False, yticklabels=False, cbar=False)
+                # sns.heatmap(tf.math.atan2(x=pred_Y[j][i,:,:,0],y=pred_Y[j][i,:,:,1]), ax=axes[j][1],xticklabels=False, yticklabels=False, cbar=False)
 
             axes[j][0].set_title(names[j] + " true")
             axes[j][1].set_title(names[j] + " predicted")
@@ -343,6 +311,7 @@ def print_parameters():
     print("FIRST_RESNET_SIZE: " + str(FIRST_RESNET_SIZE))
     print("DIALETED_RESNET_BLOCKS:" + str(DIALETED_RESNET_BLOCKS))
     print("DIALETED_RESNET_SIZE: " + str(DIALETED_RESNET_SIZE))
+    print("DIALETION: " + str(DIALETION))
     print("VARIANT:" + str(VARIANT))
     print("EPOCHS:" + str(EPOCHS))
     print("LR:" + str(LR))
@@ -383,8 +352,10 @@ if __name__ == '__main__':
         X = X[:,:,:,0].reshape(-1,32,21,1)
 
     train_index, test_index, _, _ = train_test_split(np.arange(len(X)), np.arange(len(Y)), test_size=TEST_SIZE)
-    X_train, X_test, Y_train, Y_test = X[train_index,:,:,:], X[test_index,:,:,:], Y[train_index,:,:,:,:], Y[test_index,:,:,:,:]
+    X_train, X_test, Y_train, Y_test = np.array(X[train_index,:,:,:]), np.array(X[test_index,:,:,:]), np.array(Y[train_index,:,:,:,:]), np.array(Y[test_index,:,:,:,:])
     test_names = pdb_names[test_index]
+
+    # X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=TEST_SIZE)
 
     pickle.dump(X_test, open("test_X_" + files_name + ".pkl", "wb"))
     pickle.dump(Y_test, open("test_Y_" + files_name + ".pkl", "wb"))

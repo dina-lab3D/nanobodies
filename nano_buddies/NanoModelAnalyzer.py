@@ -19,7 +19,11 @@ LENGTH_PATH = "/cs/labs/dina/tomer.cohen13/lengths"
 LENGTH_FILE = "nano_length.txt"
 
 
-PLOTS_PATH = "model_plots"
+SCORES_FILE = "network_scores.txt"
+
+PLOTS_PATH = "nanonet_model_plots"
+SUMMERY_FILE = "nanonet_model_summery"
+NANO_NET = True
 
 # number of models to take in general
 TOP_SCORES_N = 10
@@ -29,6 +33,9 @@ TOP_LOOP_N = 5
 
 # number of models to take from models
 TOP_MODEL_N = 5
+
+# number of models to take from nano_net loops
+TOP_NANO_NET_N = 10
 
 
 # Using enum class create enumerations
@@ -46,7 +53,7 @@ def get_scores_data(pdb_folder):
     :param pdb_folder: path of the pdb folder
     :return: df (len(COL) columns)
     """
-    return pd.read_csv(os.path.join(pdb_folder, "scores.txt"), sep=" ", header=None, names=COL, usecols=[0,1,3,5,7,9,11,13])
+    return pd.read_csv(os.path.join(pdb_folder, SCORES_FILE), sep=" ", header=None, names=COL, usecols=[0,1,3,5,7,9,11,13])
 
 
 def generate_rmsd_graph(folder, data, name):
@@ -78,9 +85,10 @@ def generate_final_scores(folder_path):
     # create a list of the scores from the pdb files, divided into base model and sampled loops
     for file in os.listdir(folder_path):
         pdb_folder = os.path.join(folder_path, file)
-        if os.path.isdir(pdb_folder) and os.path.exists(os.path.join(pdb_folder, "scores.txt")):
+        if os.path.isdir(pdb_folder) and os.path.exists(os.path.join(pdb_folder, SCORES_FILE)):
             model, loop = parse_one_pdb(pdb_folder)
-            models.append(model.tolist()[0])
+            if not NANO_NET:
+                models.append(model.tolist()[0])
             loops.append(loop.tolist()[0])
     return pd.DataFrame(data=models, columns=FULL_COL), pd.DataFrame(data=loops, columns=FULL_COL)
 
@@ -96,17 +104,27 @@ def parse_one_pdb(pdb_folder):
     df = get_scores_data(pdb_folder)
 
     loop_min_idx = df[df['type'] == "LOOP"]["rmsd"].idxmin()
-    model_min_idx = df[df['type'] == "MODEL"]["rmsd"].idxmin()
-
-    model_df = df[model_min_idx:model_min_idx + 1]
     loop_df = df[loop_min_idx:loop_min_idx + 1]
+
+    if NANO_NET:
+        model_df = None
+    else:
+        model_min_idx = df[df['type'] == "MODEL"]["rmsd"].idxmin()
+        model_df = df[model_min_idx:model_min_idx + 1]
 
     pdb_name = os.path.basename(pdb_folder)
     pdb_length_path = os.path.join(LENGTH_PATH, pdb_name, LENGTH_FILE)
-    with open(pdb_length_path, 'r') as file:
-        length = [file.readline()]
-        model_df["length"] = length
+    if not os.path.exists(pdb_length_path):  # TODO: add length for all the Antibodies!
+        length = [0]
+        if not NANO_NET:
+            model_df["length"] = length
         loop_df["length"] = length
+    else:
+        with open(pdb_length_path, 'r') as file:
+            length = [file.readline()]
+            if not NANO_NET:
+                model_df["length"] = length
+            loop_df["length"] = length
 
     return np.array(model_df), np.array(loop_df)
 
@@ -119,8 +137,8 @@ def extract_box_graphs(folder_path):
     :return: None
     """
     models, loops = generate_final_scores(folder_path)
-
-    generate_rmsd_graph(folder_path, models, "Model")
+    if not NANO_NET:
+        generate_rmsd_graph(folder_path, models, "Model")
     generate_rmsd_graph(folder_path, loops, "Loop")
 
 
@@ -149,10 +167,14 @@ def get_min_rmsd_by_type_score(df, score_name):
     :param score_name: score to use (dope_score/soap_score)
     :return: 2 floats
     """
-    top_loop_scores = pd.DataFrame.sort_values(df[df["type"] == "LOOP"], by=score_name)[0:TOP_LOOP_N]
-    top_model_scores = pd.DataFrame.sort_values(df[df["type"] == "MODEL"], by=score_name)[0:TOP_MODEL_N]
+    if NANO_NET:
+        top_loop_scores = pd.DataFrame.sort_values(df[df["type"] == "LOOP"], by=score_name)[0:TOP_NANO_NET_N]
+        min_index = top_loop_scores["rmsd"].idxmin()
+    else:
+        top_loop_scores = pd.DataFrame.sort_values(df[df["type"] == "LOOP"], by=score_name)[0:TOP_LOOP_N]
+        top_model_scores = pd.DataFrame.sort_values(df[df["type"] == "MODEL"], by=score_name)[0:TOP_MODEL_N]
+        min_index = pd.concat([top_loop_scores, top_model_scores])["rmsd"].idxmin()
 
-    min_index = pd.concat([top_loop_scores, top_model_scores])["rmsd"].idxmin()
     rmsd_min_index = df["rmsd"].idxmin()
     cdr3_min_index = df["cdr3_rmsd"].idxmin()
 
@@ -240,15 +262,15 @@ def summery_rmsd_scores(directory, score):
     :param score: score to use(dope_score,soap_score)
     :return: None
     """
-    summery_best_10 = os.path.join(directory, "model_summery", "summery_10_rmsd_" + score + ".csv")
-    summery_best_5_by_type = os.path.join(directory, "model_summery", "summery_" + "m" + str(TOP_MODEL_N) + "_l" + str(TOP_LOOP_N) + "_rmsd_" + score + ".csv")
+    summery_best_10 = os.path.join(directory, SUMMERY_FILE, "summery_10_rmsd_" + score + ".csv")
+    summery_best_5_by_type = os.path.join(directory, SUMMERY_FILE, "summery_" + "m" + str(TOP_MODEL_N) + "_l" + str(TOP_LOOP_N) + "_rmsd_" + score + ".csv")
 
     with open(summery_best_10, 'w') as output_file_10:
         with open(summery_best_5_by_type, "w") as output_file_5_5:
             first_pdb = True
             for file in os.listdir(directory):
                 pdb_folder = os.path.join(directory, file)
-                if os.path.isdir(pdb_folder) and os.path.exists(os.path.join(pdb_folder, "scores.txt")):
+                if os.path.isdir(pdb_folder) and os.path.exists(os.path.join(pdb_folder, SCORES_FILE)):
                     one_pdb_rmsd_scores(pdb_folder, score, get_min_rmsd_by_score).to_csv(output_file_10, header=first_pdb, index=False)
                     one_pdb_rmsd_scores(pdb_folder, score, get_min_rmsd_by_type_score).to_csv(output_file_5_5, header=first_pdb, index=False)
                     first_pdb = False
@@ -305,7 +327,7 @@ def summery_differences(directory, score_name, summery_best_10_path, summery_bes
     df2 = pd.DataFrame({"type": ["5"], "rmsd_sum": [rmsd_sum2], "diff_sum": [diff_sum2], "diff_num_under_0.3": [diff_03_2], "num_rmsd_under_2": [rmsd_under_2_2],
                        "num_rmsd_under_1.5": [rmsd_under_15_2], "num_rmsd_under_1": [rmsd_under_1_2], "num_rmsd_under_0.5": [rmsd_under_05_2]})
 
-    pd.concat([df1, df2]).to_csv(os.path.join(directory, "model_summery", "diff_summery_" + score_name + "m" + str(TOP_MODEL_N) + "l" + str(TOP_LOOP_N) + ".csv"), header=True, index=False)
+    pd.concat([df1, df2]).to_csv(os.path.join(directory, SUMMERY_FILE, "diff_summery_" + score_name + "m" + str(TOP_MODEL_N) + "l" + str(TOP_LOOP_N) + ".csv"), header=True, index=False)
 
 
 def one_pdb_rmsd_scores(pdb_folder, score_name, min_func):
@@ -349,15 +371,15 @@ def plot_rmsd_vs_score(directory, n, score):
         if n == 0:
             return
         pdb_folder = os.path.join(directory, file)
-        if os.path.isdir(pdb_folder) and os.path.exists(os.path.join(pdb_folder, "scores.txt")):
+        if os.path.isdir(pdb_folder) and os.path.exists(os.path.join(pdb_folder, SCORES_FILE)):
             plot_points_one_pdb(directory, pdb_folder, score)
             n -= 1
 
 
 def summery_cdr3(directory):
 
-    mean_file_name = os.path.join(directory, "model_summery", "cdr3_mean.csv")
-    all_file_name = os.path.join(directory, "model_summery", "cdr3_all.csv")
+    mean_file_name = os.path.join(directory, SUMMERY_FILE, "cdr3_mean.csv")
+    all_file_name = os.path.join(directory, SUMMERY_FILE, "cdr3_all.csv")
     with open(mean_file_name, 'w') as mean_file:
         with open(all_file_name, "w") as all_file:
             first_pdb = True
@@ -395,9 +417,9 @@ if __name__ == '__main__':
     if args.points:  # if we want to create point plots (rmsd vs score)
         plot_rmsd_vs_score(args.directory, args.points, args.score)
     if args.summery:  # if we want to create point plots (rmsd vs score)
-        if not os.path.isdir(os.path.join(args.directory, "model_summery")):
-            os.mkdir(os.path.join(args.directory, "model_summery"))
+        if not os.path.isdir(os.path.join(args.directory, SUMMERY_FILE)):
+            os.mkdir(os.path.join(args.directory, SUMMERY_FILE))
         summery_rmsd_scores(args.directory, args.score)  # saves summery into csv file
-        summery_cdr3(args.directory)
+        # summery_cdr3(args.directory)
 
 

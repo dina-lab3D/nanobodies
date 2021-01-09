@@ -5,7 +5,7 @@ import numpy as np
 
 sys.path.insert(1, '/cs/usr/tomer.cohen13/lab/nanobodies/scripts')
 from cdr_annotation import *
-from modelNanobody import get_sequence
+# from modelNanobody import get_sequence
 
 CDR_MAX_LENGTH = 32
 AA_DICT = {"A": 0, "C": 1, "D": 2, "E": 3, "F": 4, "G": 5, "H": 6, "I": 7, "K": 8, "L": 9, "M": 10, "N": 11, "P": 12,
@@ -80,8 +80,192 @@ def remove_pad(seq, one_hot_matrix, cdr):
     [cdr_start, cdr_end] = find[cdr - 1](seq)
 
     cdr_len = (cdr_end + 1 - cdr_start)
-
     pad_left = (CDR_MAX_LENGTH - cdr_len) // 2
-    pad_right = pad_left - cdr_len
-
+    pad_right = pad_left + cdr_len
     return one_hot_matrix[pad_left:pad_right, pad_left:pad_right]
+
+
+def generate_input(pdb):
+    """
+
+    :param pdb:
+    :return:
+    """
+
+    model_path = os.path.join(pdb, "ref.pdb")
+    model = PDBParser().get_structure(id=pdb, file=model_path)[0]['H']
+
+    seq, aa_residues = get_seq(model)
+    cdr3_matrix = one_hot_coding(seq, 3)
+
+    if "X" in seq:
+        print("Warning, PDB: {}, has unknown aa".format(pdb))
+
+    cdr1_matrix = one_hot_coding(seq, 1)
+
+    # if OPTION == 1:
+    #     third_matrix = option1(aa_residues, cdr1_start, cdr1_end, cdr3_start, cdr3_end)
+    # elif OPTION == 2:  # OPTION == 2'
+    #     pad = (CDR_MAX_LENGTH - (cdr1_end+1 - cdr1_start)) // 2
+    #     third_matrix = option2(aa_residues, cdr1_start, cdr1_end, cdr3_start, cdr3_end, pad)
+    # elif OPTION == 3:
+
+    third_matrix = one_hot_coding(seq, 2)
+    return np.dstack([cdr1_matrix, cdr3_matrix, third_matrix])
+
+
+def normalize_dist(dist):
+    dist = np.clip(dist,0,20)
+    return dist / 10
+
+
+def get_dist(pep_residues, start, end, pad=0):
+    """
+
+    :param pep_residues:
+    :param start:
+    :param end:
+    :param pad:
+    :return:
+    """
+    residues = pep_residues[start:end+1]
+    dist = np.zeros((CDR_MAX_LENGTH, CDR_MAX_LENGTH))
+    for i in range(len(residues)):
+        for j in range(len(residues)):
+            if i == j:
+                continue
+            c1 = 'CB'
+            c2 = 'CB'
+            if 'CB' not in residues[i]:  # GLY
+                c1 = 'CA'
+            if 'CB' not in residues[j]:  # GLY
+                c2 = 'CA'
+            dist[i+pad][j+pad] = (residues[i][c1] - residues[j][c2])
+    # if BINS:
+    #     return dist
+    dist = normalize_dist(dist)
+    return np.dstack([dist, dist])
+
+
+def get_theta(pep_residues, start, end, pad=0):
+    """
+
+    :param pep_residues:
+    :param start:
+    :param end:
+    :param pad:
+    :return:
+    """
+    residues = pep_residues[start:end+1]
+    cos_theta = np.zeros((CDR_MAX_LENGTH, CDR_MAX_LENGTH))
+    sin_theta = np.zeros((CDR_MAX_LENGTH, CDR_MAX_LENGTH))
+
+    angles = np.zeros((CDR_MAX_LENGTH, CDR_MAX_LENGTH))
+
+    for i in range(len(residues)):
+        for j in range(len(residues)):
+            if i == j:
+                continue
+            if not residues[i].has_id('CB') or not residues[j].has_id('CB'):  # GLY OR UNK OR MISSING CB
+                continue
+
+            angle = calc_dihedral(residues[i]["N"].get_vector(), residues[i]["CA"].get_vector(),
+                                  residues[i]["CB"].get_vector(), residues[j]["CB"].get_vector())
+            cos_theta[i+pad][j+pad] = np.cos(angle)
+            sin_theta[i+pad][j+pad] = np.sin(angle)
+            angles[i + pad][j + pad] = np.degrees(angle) % 360
+    # if BINS:
+    #     return angles
+    return np.dstack([cos_theta, sin_theta])
+
+
+def get_phi(pep_residues, start, end, pad=0):
+    """
+
+    :param pep_residues:
+    :param start:
+    :param end:
+    :param pad:
+    :return:
+    """
+    residues = pep_residues[start:end+1]
+    cos_phi = np.zeros((CDR_MAX_LENGTH, CDR_MAX_LENGTH))
+    sin_phi = np.zeros((CDR_MAX_LENGTH, CDR_MAX_LENGTH))
+    angles = np.zeros((CDR_MAX_LENGTH, CDR_MAX_LENGTH))
+
+    for i in range(len(residues)):
+        for j in range(len(residues)):
+            if i == j:
+                continue
+            if not residues[i].has_id('CB') or not residues[j].has_id('CB'):  # GLY OR UNK OR MISSING CB
+                continue
+            angle = calc_angle(residues[i]["CA"].get_vector(), residues[i]["CB"].get_vector(),
+                               residues[j]["CB"].get_vector())
+            cos_phi[i+pad][j+pad] = np.cos(angle)
+            sin_phi[i+pad][j+pad] = np.sin(angle)
+            angles[i+pad][j+pad] = np.degrees(angle) % 360
+    # if BINS:
+    #     return angles
+    return np.dstack([cos_phi, sin_phi])
+
+
+def get_omega(pep_residues, start, end, pad=0):
+    """
+
+    :param pep_residues:
+    :param start:
+    :param end:
+    :param pad:
+    :return:
+    """
+    residues = pep_residues[start:end+1]
+    cos_omega = np.zeros((CDR_MAX_LENGTH, CDR_MAX_LENGTH))
+    sin_omega = np.zeros((CDR_MAX_LENGTH, CDR_MAX_LENGTH))
+    angles = np.zeros((CDR_MAX_LENGTH, CDR_MAX_LENGTH))
+
+    for i in range(len(residues)):
+        for j in range(len(residues)):
+            if i == j:
+                continue
+            if not residues[i].has_id('CB') or not residues[j].has_id('CB'):  # GLY OR UNK OR MISSING CB
+                continue
+            angle = calc_dihedral(residues[i]["CA"].get_vector(), residues[i]["CB"].get_vector(),
+                                  residues[j]["CB"].get_vector(), residues[j]["CA"].get_vector())
+            cos_omega[i+pad][j+pad] = np.cos(angle)
+            sin_omega[i+pad][j+pad] = np.sin(angle)
+            angles[i+pad][j+pad] = np.degrees(angle) % 360
+    # if BINS:
+    #     return angles
+    return np.dstack([cos_omega, sin_omega])
+
+
+def generate_label(pdb):
+    """
+
+    :param pdb:
+    :return:
+    """
+
+    model = PDBParser().get_structure(pdb, os.path.join(pdb, "ref.pdb"))[0]["H"]
+    # pep = PPBuilder().build_peptides(model, aa_only=False)[0]
+
+    seq, aa_residues = get_seq(model)
+
+    [cdr3_start, cdr3_end] = find_cdr3(seq)
+
+    # for padding the result matrix with zeros
+    pad = (CDR_MAX_LENGTH - (cdr3_end+1 - cdr3_start)) // 2
+
+    # get angles and distance
+    theta = get_theta(aa_residues, cdr3_start, cdr3_end, pad)
+    dist = get_dist(aa_residues, cdr3_start, cdr3_end, pad)
+    phi= get_phi(aa_residues, cdr3_start, cdr3_end, pad)
+    omega = get_omega(aa_residues, cdr3_start, cdr3_end, pad)
+
+    if "X" in seq:
+        print("Warning, PDB: {}, has unknown aa".format(pdb))
+    labels_matrix = np.array([dist, omega, theta, phi])
+    # if BINS:
+    #     labels_matrix = matrix_to_bins(labels_matrix)
+    return labels_matrix
+

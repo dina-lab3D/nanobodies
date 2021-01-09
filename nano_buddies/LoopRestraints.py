@@ -1,13 +1,13 @@
 
-
-from NanoNetInut import generate_input
+from tensorflow.keras.models import load_model
+from NanoNetUtils import generate_input
 from modeller import *
 from modeller.automodel import *
 from modeller import soap_loop
 from modeller.scripts import complete_pdb
 import argparse
 import numpy as np
-from NanoNetUtils import remove_pad
+from NanoNetUtils import remove_pad, get_seq
 
 import Bio
 from Bio import PDB
@@ -32,21 +32,32 @@ get_frag_chain = "/cs/staff/dina/utils/get_frag_chain.Linux"
 loop_model_num = 200
 
 
-def loop_model(seq, pdb_file, restraints_matrix):
+def get_sequence(fasta_filename):
+    for seq_record in SeqIO.parse(fasta_filename, "fasta"):
+        sequence = str(seq_record.seq)
+        return sequence
 
 
-    pdb_file = pdb_file
+def loop_model(residues, seq, pdb_file, restraints_matrix, env):
+
     [cdr1_s, cdr1_e] = cdr_annotation.find_cdr1(seq)
     [cdr3_s, cdr3_e] = cdr_annotation.find_cdr3(seq)
-    restraints_matrix = remove_pad(seq, restraints_matrix, 3)
 
-    if (cdr3_e - cdr1_s + 1) != restraints_matrix.shape[0] or restraints_matrix.shape[0] != restraints_matrix.shape[1]:
+    distance_restraints = remove_pad(seq, restraints_matrix[0][0,:,:,0], 3)
+    print(distance_restraints.shape)
+
+    if (cdr3_e - cdr3_s + 1) != distance_restraints.shape[0] or distance_restraints.shape[0] != distance_restraints.shape[1]:
+        print(cdr3_e - cdr3_s + 1)
+        print(distance_restraints.shape[0])
+        print(distance_restraints.shape[1])
         print("cdr3 sequence error!!!")
+        exit(2)
 
     class MyLoop(loopmodel):
+
     # This routine picks the residues to be refined by loop modeling
         def select_loop_atoms(self):
-            return selection(self.residue_range(cdr3_s+1, cdr3_e-2), self.residue_range(cdr1_s+1, cdr1_e-2)) # focus  TODO: cdr1 loop modeling
+            return selection(self.residue_range(cdr3_s+1, cdr3_e-2)) # focus  TODO: cdr1 loop modeling , self.residue_range(cdr1_s+1, cdr1_e-2)
 
         def special_restraints(self, aln):
 
@@ -54,41 +65,48 @@ def loop_model(seq, pdb_file, restraints_matrix):
             at = self.atoms
 
             #  distances
-            distance_restraints = restraints_matrix[0]
+            distance_restraints = remove_pad(seq, restraints_matrix[0][0,:,:,0],3)
             for i in range(distance_restraints.shape[0]):
                 for j in range(distance_restraints.shape[1]):
-
+                    if i == j:
+                        continue
                     atom_i = 'CB:'
                     atom_j = 'CB:'
-                    if seq[i] == 'G':
+                    if not residues[i].has_id('CB'):
                         atom_i = 'CA:'
-                    if seq[i] == 'G':
+                    if not residues[j].has_id('CB'):
                         atom_j = 'CA:'
-                    rsr.add(forms.gaussian(group=physical.xy_distance,feature=features.distance(at[atom_i + str(i)], at[atom_j + str(j)]),mean=distance_restraints[i,j], stdev=1))
+                    rsr.add(forms.gaussian(group=physical.xy_distance,feature=features.distance(at[atom_i + str(i+1)], at[atom_j + str(j+1)]),mean=distance_restraints[i,j], stdev=1))
 
             #  omegas
-            omega_restraints = np.arctan2(restraints_matrix[1,0], restraints_matrix[1,1])
+            omega_restraints = np.arctan2(remove_pad(seq, restraints_matrix[1][0,:,:,0],3), remove_pad(seq, restraints_matrix[1][0,:,:,1],3))
             for i in range(omega_restraints.shape[0]):
                 for j in range(omega_restraints.shape[1]):
-                    if seq[i] == 'G' or seq[j] == 'G':
+                    if i == j:
                         continue
-                    rsr.add(forms.gaussian(group=physical.dihedral,feature=features.dihedral(at['CA:' + str(i)], at['CB:' + str(i)], at['CB:' + str(j)], at['CA:' + str(j)]),mean=omega_restraints[i,j], stdev=0.25))
+                    if not residues[i].has_id('CB') or not residues[j].has_id('CB'):
+                        continue
+                    rsr.add(forms.gaussian(group=physical.dihedral,feature=features.dihedral(at['CA:' + str(i+1)], at['CB:' + str(i+1)], at['CB:' + str(j+1)], at['CA:' + str(j+1)]),mean=omega_restraints[i,j], stdev=0.25))
 
             #  thethas
-            thetha_restraints = np.arctan2(restraints_matrix[2,0], restraints_matrix[2,1])
+            thetha_restraints = np.arctan2(remove_pad(seq, restraints_matrix[2][0,:,:,0],3), remove_pad(seq, restraints_matrix[2][0,:,:,1],3))
             for i in range(thetha_restraints.shape[0]):
                 for j in range(thetha_restraints.shape[1]):
-                    if seq[i] == 'G' or seq[j] == 'G':
+                    if i == j:
                         continue
-                    rsr.add(forms.gaussian(group=physical.dihedral,feature=features.dihedral(at['N:' + str(i)], at['CA:' + str(i)], at['CB:' + str(i)], at['CB:' + str(j)]),mean=thetha_restraints[i,j], stdev=0.15))
+                    if not residues[i].has_id('CB') or not residues[j].has_id('CB'):
+                        continue
+                    rsr.add(forms.gaussian(group=physical.dihedral,feature=features.dihedral(at['N:' + str(i+1)], at['CA:' + str(i+1)], at['CB:' + str(i+1)], at['CB:' + str(j+1)]),mean=thetha_restraints[i,j], stdev=0.15))
 
             #  phis
-            phis_restraints = np.arctan2(restraints_matrix[3,0], restraints_matrix[3,1])
+            phis_restraints = np.arctan2(remove_pad(seq, restraints_matrix[3][0,:,:,0],3), remove_pad(seq, restraints_matrix[3][0,:,:,1],3))
             for i in range(phis_restraints.shape[0]):
                 for j in range(phis_restraints.shape[1]):
-                    if seq[i] == 'G' or seq[j] == 'G':
+                    if i == j:
                         continue
-                    rsr.add(forms.gaussian(group=physical.angle,feature=features.angle(at['CA:' + str(i)], at['CB:' + str(i)], at['CB:' + str(j)]),mean=phis_restraints[i,j], stdev=0.1))
+                    if not residues[i].has_id('CB') or not residues[j].has_id('CB'):
+                        continue
+                    rsr.add(forms.gaussian(group=physical.angle,feature=features.angle(at['CA:' + str(i+1)], at['CB:' + str(i+1)], at['CB:' + str(j+1)]),mean=phis_restraints[i,j], stdev=0.1))
 
     return MyLoop(env,inimodel=pdb_file,sequence='NANO')
 
@@ -96,20 +114,36 @@ def loop_model(seq, pdb_file, restraints_matrix):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("fasta", help="fasta file")
-    parser.add_argument("pdb", help="pdb_model")
+    parser.add_argument("pdb", help="pdb_dir")
     parser.add_argument("NanoNet", help="trained NanoNet model")
     args = parser.parse_args()
 
+    nano_net_model = load_model(args.NanoNet)
+    os.chdir(args.pdb)
 
-    model_seq = get_sequence(args.fasta)
+    model = PDB.PDBParser().get_structure(id=args.pdb, file='model_0.pdb')[0]
+    model_seq = get_sequence(os.path.basename(args.pdb) + ".fa")
+    model_seq_2, aa_chain = get_seq(model)
+
+    if model_seq != model_seq_2:
+        print(model_seq)
+        print(model_seq_2)
+        exit(1)
 
     [cdr1_start, cdr1_end] = cdr_annotation.find_cdr1(model_seq)  # TODO- fix the cdr1 bug
     [cdr3_start, cdr3_end] = cdr_annotation.find_cdr3(model_seq)
+    [cdr2_start, cdr2_end] = cdr_annotation.find_cdr2(model_seq)
 
-    restraints = args.NanoNet.predict(generate_input(args.pdb))
 
-    m = loop_model(model_seq, args.pdb, restraints)
+    restraints = nano_net_model.predict(np.array([generate_input(os.getcwd())]))
+
+    log.verbose()
+    env = environ()
+    env.io.atom_files_directory = '.'
+    env.libs.topology.read(file='$(LIB)/top_heav.lib')
+    env.libs.parameters.read(file='$(LIB)/par.lib')  # read parameters
+
+    m = loop_model(aa_chain, model_seq, 'model_0.pdb', restraints, env)
     m.loop.starting_model= 1           # index of the first loop model
     m.loop.ending_model = loop_model_num   # index of the last loop model
     m.loop.md_level = refine.slow      # loop refinement method; this yields
@@ -121,56 +155,8 @@ if __name__ == '__main__':
     if os.path.isfile("ref.pdb"):
         subprocess.run(renumber + " ref.pdb > ref_renumber.pdb", shell=True)
 
-        subprocess.run(get_frag_chain + " ref_renumber.pdb H " + str(cdr1_start) + " " + str(cdr1_end) + " > ref_cdr1.pdb", shell=True)
-        subprocess.run(get_frag_chain + " ref_renumber.pdb H " + str(cdr2_start) + " " + str(cdr2_end) + " > ref_cdr2.pdb", shell=True)
-        subprocess.run(get_frag_chain + " ref_renumber.pdb H " + str(cdr3_start) + " " + str(cdr3_end) + " > ref_cdr3.pdb", shell=True)
-
-
-    # score models
     f = open("network_scores.txt", "w")
-    cdr_dist = open("cdrs_dist", "w")
-
-
-    model_name = 'model_0.pdb'
-    mdl = complete_pdb(env, model_name)
-    s = selection(mdl)   # all atom selection
-
-    dope_score = s.assess_dope(output='ENERGY_PROFILE NO_REPORT',
-                               normalize_profile=True, smoothing_window=15)
-    soap_score = s.assess(sp, output='ENERGY_PROFILE NO_REPORT',
-                          normalize_profile=True, smoothing_window=15)
-    rmsd = 0.0
-    cdr1_rmsd = 0.0
-    cdr2_rmsd = 0.0
-    cdr3_rmsd = 0.0
-    if os.path.isfile("ref.pdb"):
-
-        cmd = rmsd_prog + " -t ref.pdb " + model_name + " | tail -n1 "
-        rmsd_out = subprocess.check_output(cmd, shell=True)
-        rmsd = float(rmsd_out.strip())
-
-        # cdr 1,2,3 rmsd
-
-        subprocess.run(rmsd_align + " ref.pdb" + " " + model_name, shell=True)  # align to get rmsd of cdr without cheating...
-
-        subprocess.run(get_frag_chain + " " + model_name.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr1_start) + " " + str(cdr1_end) + " > temp_cdr1.pdb", shell=True)
-        subprocess.run(get_frag_chain + " " + model_name.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr2_start) + " " + str(cdr2_end) + " > temp_cdr2.pdb", shell=True)
-        subprocess.run(get_frag_chain + " " + model_name.replace(".pdb", "_tr.pdb") + " ' ' " + str(cdr3_start) + " " + str(cdr3_end) + " > temp_cdr3.pdb", shell=True)
-
-        cdr1_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr1.pdb temp_cdr1.pdb | tail -n1 ", shell=True).strip())
-        cdr2_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr2.pdb temp_cdr2.pdb | tail -n1 ", shell=True).strip())
-        cdr3_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr3.pdb temp_cdr3.pdb | tail -n1 ", shell=True).strip())
-
-        calc_dist(model_name.replace(".pdb", "_tr.pdb"), cdr3_start, cdr3_end, cdr_dist)
-        os.remove(model_name.replace(".pdb", "_tr.pdb"))
-
-
-    print ("MODEL ", model_name, " dope-score: ", dope_score, " soap-score: ", soap_score, " rmsd: ", rmsd, " cdr1-rmsd: ", 0, " cdr2-rmsd: ", cdr2_rmsd, " cdr3-rmsd: ", cdr3_rmsd)
-    ""
-    f.write("MODEL "+ model_name + " dope-score: " + str(dope_score) + " soap-score: " + str(soap_score) + " rmsd: " + str(rmsd) +
-            " cdr1-rmsd: " + str(cdr1_rmsd) + " cdr2-rmsd: " + str(cdr2_rmsd) + " cdr3-rmsd: " + str(cdr3_rmsd) + "\n")
-
-
+    sp = soap_loop.Scorer()
     # score loops
     for i in range(1, (loop_model_num)+1):  # change to range(1, (loop_model_num*2)+1) for loop modeling 2
         # read model file
@@ -180,12 +166,11 @@ if __name__ == '__main__':
         dope_score = s.assess_dope(output='ENERGY_PROFILE NO_REPORT',
                                    normalize_profile=True, smoothing_window=15)
         soap_score = s.assess(sp, output='ENERGY_PROFILE NO_REPORT',
-                              normalize_profile=True, smoothing_window=15)
+                               normalize_profile=True, smoothing_window=15)
         rmsd = 0.0
         cdr1_rmsd = 0.0
         cdr2_rmsd = 0.0
         cdr3_rmsd = 0.0
-
         if os.path.isfile("ref.pdb"):
             cmd = rmsd_prog + " -t ref.pdb " + code + " | tail -n1 "
             rmsd_out = subprocess.check_output(cmd, shell=True)
@@ -203,7 +188,7 @@ if __name__ == '__main__':
         cdr2_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr2.pdb temp_cdr2.pdb | tail -n1 ", shell=True).strip())
         cdr3_rmsd = float(subprocess.check_output(rmsd_prog + " ref_cdr3.pdb temp_cdr3.pdb | tail -n1 ", shell=True).strip())
 
-        print ("LOOP ", code, " dope-score: ", dope_score, " soap-score: ", soap_score, " rmsd: ", rmsd, " cdr1-rmsd: ", 0, " cdr2-rmsd: ", cdr2_rmsd, " cdr3-rmsd: ", cdr3_rmsd)
+        print ("LOOP ", code, " dope-score: ", dope_score, " soap-score: ", soap_score, " rmsd: ", rmsd, " cdr1-rmsd: ", cdr1_rmsd, " cdr2-rmsd: ", cdr2_rmsd, " cdr3-rmsd: ", cdr3_rmsd)
         f.write("LOOP "+ code + " dope-score: " + str(dope_score) + " soap-score: " + str(soap_score) + " rmsd: " + str(rmsd) +
                 " cdr1-rmsd: " + str(cdr1_rmsd) + " cdr2-rmsd: " + str(cdr2_rmsd) + " cdr3-rmsd: " + str(cdr3_rmsd) + "\n")
 
@@ -216,7 +201,7 @@ if __name__ == '__main__':
         os.remove("temp_cdr1.pdb")
         os.remove("temp_cdr2.pdb")
         os.remove("temp_cdr3.pdb")
-        os.remove("ref_renumber.pdb")
+        # os.remove("ref_renumber.pdb")
 
     # # clean up templates
     # for template in template_list:
@@ -231,6 +216,8 @@ if __name__ == '__main__':
     # # clean up other files
     # os.remove("NANO.rsr")
     # os.remove("NANO.ini")
-    # os.remove("NANO.lrsr")
+    os.remove("NANO.lrsr")
     # os.remove("NANO.sch")
-    # os.remove("default")
+    os.remove("default")
+
+    print("ended successfully")
