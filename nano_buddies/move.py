@@ -7,23 +7,6 @@ import pickle
 
 if __name__ == '__main__':
 
-    dir = "/cs/usr/tomer.cohen13/lab/NN/RosettaFasta"
-    os.chdir(dir)
-
-    for pdb_dir in os.listdir(os.getcwd()):
-        os.chdir(pdb_dir)
-
-        with open(pdb_dir+'.fa', 'r') as file:
-            # read a list of lines into data
-            data = file.readlines()
-
-        data[0] = '>heavy\n'
-
-        # and write everything back
-        with open(pdb_dir+'.fa', 'w') as file:
-            file.writelines(data)
-        os.chdir("..")
-    exit()
 
     dir = "/cs/usr/tomer.cohen13/lab/NN/TestPDBs_backup"
     os.chdir(dir)
@@ -42,7 +25,25 @@ if __name__ == '__main__':
         subprocess.run("cp ref_cdr3.pdb /cs/labs/dina/tomer.cohen13/NN/RosettaFasta/" + pdb_name + "/ref_cdr3.pdb", shell=True)
         os.chdir("..")
 
+    dir = "/cs/usr/tomer.cohen13/lab/NN/RosettaFasta"
+    os.chdir(dir)
+
+    for pdb_dir in os.listdir(os.getcwd()):
+        os.chdir(pdb_dir)
+
+        with open(pdb_dir+'.fa', 'r') as file:
+            # read a list of lines into data
+            data = file.readlines()
+
+        data[0] = '>heavy\n'
+
+        # and write everything back
+        with open(pdb_dir+'.fa', 'w') as file:
+            file.writelines(data)
+        os.chdir("..")
     exit()
+
+
 
 
     if not os.path.exists("/cs/labs/dina/tomer.cohen13/NN/TestPDBs"):

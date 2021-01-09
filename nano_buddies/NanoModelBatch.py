@@ -93,7 +93,11 @@ if __name__ == '__main__':
             with open(script_name, 'w') as f:
                 f.write(INTRO)
                 f.write("cd " + os.getcwd() + "\n")
-                f.write("/cs/labs/dina/tomer.cohen13/Rosetta/mainantibody.linuxgccrelease -exclude_homologs_fr_cutoff 83 -exclude_homologs_cdr_cutoff 83 -vhh_only -out:file:scorefile scores.txt -fasta " + pdb_dir+".fa | tee grafting.log")
+                f.write("setenv ROSETTA /cs/labs/dina/tomer.cohen13/Rosetta\n")
+                f.write("setenv ROSETTA3_DB $ROSETTA/main/database\n")
+                f.write("setenv ROSETTA_BIN $ROSETTA/main/source/bin\n")
+                f.write("setenv PATH $PATH':'$ROSETTA_BIN\n")
+                f.write("antibody.linuxgccrelease -exclude_homologs true  -camelid true -vhh_only -out:file:scorefile scores.txt -fasta " + pdb_dir+".fa | tee grafting.log\n")
                 f.write("cd grafting\n")
                 f.write("rm -f debug*\n")
                 f.write("rm -f orientation*\n")

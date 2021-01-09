@@ -24,11 +24,11 @@ RESNET_BLOCKS = 3
 RESNET_SIZE = (17, 17)
 FIRST_RESNET_SIZE = (17, 17)
 DIALETED_RESNET_BLOCKS = 5
-DIALETION = 4
+DIALETION = [1,2,4,8,16]
 DIALETED_RESNET_SIZE = (5, 5)
 VARIANT = 1
 EPOCHS = 200
-LR = 0.0005
+LR = 0.001
 TEST_SIZE = 0.05
 BATCH = 32
 DROPOUT = 0.2
@@ -40,7 +40,7 @@ END_ACTIVATION = "elu"
 LOSS = "mse"
 BINS = False
 POOL = False
-files_name = "real_resnet_4"
+files_name = "save_9"
 
 
 class PolynomialDecay:
@@ -96,12 +96,12 @@ def d2_net_architecture(variant=2):
     loop_layer = layers.Conv2D(32, FIRST_RESNET_SIZE, padding='same')(input_layer)
 
     for i in range(RESNET_BLOCKS):
-        # for i in range(5):
-        conv_layer = layers.Conv2D(32, RESNET_SIZE, activation=ACTIVATION, padding='same')(loop_layer)
-        conv_layer = layers.Conv2D(32, RESNET_SIZE, padding='same')(conv_layer)
-        batch_layer = layers.BatchNormalization()(conv_layer)
-        loop_layer = layers.Add()([batch_layer, loop_layer])
-        loop_layer = layers.Activation(ACTIVATION)(loop_layer)
+        # for loop in [1,2,4,8,16]:
+            conv_layer = layers.Conv2D(32, RESNET_SIZE, activation=ACTIVATION, padding='same')(loop_layer)
+            conv_layer = layers.Conv2D(32, RESNET_SIZE, padding='same')(conv_layer)
+            batch_layer = layers.BatchNormalization()(conv_layer)
+            loop_layer = layers.Add()([batch_layer, loop_layer])
+            loop_layer = layers.Activation(ACTIVATION)(loop_layer)
 
     # loop_layer = layers.Conv2D(3, FIRST_RESNET_SIZE, padding='same')(loop_layer)
     # loop_layer = layers.BatchNormalization()(loop_layer)
@@ -116,9 +116,9 @@ def d2_net_architecture(variant=2):
     loop_layer = layers.Concatenate()([conv_layer, conv_layer_t])
 
     for block in range(DIALETED_RESNET_BLOCKS):
-        for loop in range(DIALETION):  # dilated ResNet
-            loop_conv_layer = layers.Conv2D(64, DIALETED_RESNET_SIZE, activation=ACTIVATION, dilation_rate=2**loop, padding="same")(loop_layer)
-            loop_conv_layer = layers.Conv2D(64, DIALETED_RESNET_SIZE, dilation_rate=2**loop , padding="same")(loop_conv_layer)  # TODO: add activation?
+        for loop in DIALETION:  # dilated ResNet
+            loop_conv_layer = layers.Conv2D(64, DIALETED_RESNET_SIZE, activation=ACTIVATION, dilation_rate=loop, padding="same")(loop_layer)
+            loop_conv_layer = layers.Conv2D(64, DIALETED_RESNET_SIZE, dilation_rate=loop , padding="same")(loop_conv_layer)  # TODO: add activation?
             batch_layer = layers.BatchNormalization()(loop_conv_layer)
             loop_layer = layers.Add()([batch_layer, loop_layer])
             loop_layer = layers.Activation(ACTIVATION)(loop_layer)
