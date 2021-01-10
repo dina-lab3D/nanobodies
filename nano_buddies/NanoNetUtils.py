@@ -2,6 +2,7 @@ from Bio.PDB import *
 import os
 import sys
 import numpy as np
+from Bio import SeqIO
 
 sys.path.insert(1, '/cs/usr/tomer.cohen13/lab/nanobodies/scripts')
 from cdr_annotation import *
@@ -10,6 +11,12 @@ from cdr_annotation import *
 CDR_MAX_LENGTH = 32
 AA_DICT = {"A": 0, "C": 1, "D": 2, "E": 3, "F": 4, "G": 5, "H": 6, "I": 7, "K": 8, "L": 9, "M": 10, "N": 11, "P": 12,
            "Q": 13, "R": 14, "S": 15, "T": 16, "W": 17, "Y": 18, "V": 19, "-": 20, "X": 20}
+
+
+def get_sequence(fasta_filename):
+    for seq_record in SeqIO.parse(fasta_filename, "fasta"):
+        sequence = str(seq_record.seq)
+        return sequence
 
 
 def one_hot_coding(seq, cdr):
@@ -38,9 +45,9 @@ def one_hot_coding(seq, cdr):
 
 def valid_pdb(pdb, test=False):
 
-    if not os.path.exists(os.path.join(pdb, "ref.pdb")):
-        return False
-    model = PDBParser().get_structure(id=pdb, file=os.path.join(pdb, "ref.pdb"))[0]["H"]
+    # if not os.path.exists(os.path.join(pdb, "ref.pdb")):
+    #     return False
+    model = PDBParser().get_structure(id=pdb, file=pdb)[0]["H"]
     for i in model.get_residues():
         if not i.has_id("N"):
             print(pdb + ": no side chains")
@@ -85,32 +92,22 @@ def remove_pad(seq, one_hot_matrix, cdr):
     return one_hot_matrix[pad_left:pad_right, pad_left:pad_right]
 
 
-def generate_input(pdb):
+def generate_input(pdb_fasta):
     """
 
     :param pdb:
     :return:
     """
 
-    model_path = os.path.join(pdb, "ref.pdb")
-    model = PDBParser().get_structure(id=pdb, file=model_path)[0]['H']
-
-    seq, aa_residues = get_seq(model)
+    seq = get_sequence(pdb_fasta)
     cdr3_matrix = one_hot_coding(seq, 3)
 
     if "X" in seq:
-        print("Warning, PDB: {}, has unknown aa".format(pdb))
+        print("Warning, PDB: {}, has unknown aa".format(pdb_fasta))
 
     cdr1_matrix = one_hot_coding(seq, 1)
-
-    # if OPTION == 1:
-    #     third_matrix = option1(aa_residues, cdr1_start, cdr1_end, cdr3_start, cdr3_end)
-    # elif OPTION == 2:  # OPTION == 2'
-    #     pad = (CDR_MAX_LENGTH - (cdr1_end+1 - cdr1_start)) // 2
-    #     third_matrix = option2(aa_residues, cdr1_start, cdr1_end, cdr3_start, cdr3_end, pad)
-    # elif OPTION == 3:
-
     third_matrix = one_hot_coding(seq, 2)
+
     return np.dstack([cdr1_matrix, cdr3_matrix, third_matrix])
 
 
@@ -239,17 +236,22 @@ def get_omega(pep_residues, start, end, pad=0):
     return np.dstack([cos_omega, sin_omega])
 
 
-def generate_label(pdb):
+def generate_label(fasta, pdb):
     """
 
+    :param fasta:
     :param pdb:
     :return:
     """
 
-    model = PDBParser().get_structure(pdb, os.path.join(pdb, "ref.pdb"))[0]["H"]
-    # pep = PPBuilder().build_peptides(model, aa_only=False)[0]
-
+    model = PDBParser().get_structure(pdb, pdb)[0]["H"]
     seq, aa_residues = get_seq(model)
+
+    seq_test = get_sequence(fasta)
+    if seq_test != seq:
+        print(seq)
+        print(seq_test)
+        exit(1)
 
     [cdr3_start, cdr3_end] = find_cdr3(seq)
 
@@ -263,7 +265,7 @@ def generate_label(pdb):
     omega = get_omega(aa_residues, cdr3_start, cdr3_end, pad)
 
     if "X" in seq:
-        print("Warning, PDB: {}, has unknown aa".format(pdb))
+        print("Warning, PDB: {}, has unknown aa".format(fasta))
     labels_matrix = np.array([dist, omega, theta, phi])
     # if BINS:
     #     labels_matrix = matrix_to_bins(labels_matrix)
