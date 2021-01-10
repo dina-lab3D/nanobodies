@@ -81,10 +81,9 @@ def get_seq(chain):
     return seq, aa_residues
 
 
-def remove_pad(seq, one_hot_matrix, cdr):
+def remove_pad(one_hot_matrix, seq):
 
-    find = [find_cdr1, find_cdr2, find_cdr3]
-    [cdr_start, cdr_end] = find[cdr - 1](seq)
+    [cdr_start, cdr_end] = find_cdr3(seq)
 
     cdr_len = (cdr_end + 1 - cdr_start)
     pad_left = (CDR_MAX_LENGTH - cdr_len) // 2

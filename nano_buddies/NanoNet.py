@@ -20,27 +20,27 @@ tf.keras.utils.get_custom_objects().update({'swish': layers.Activation(swish)})
 # idea - calculate tanh of omega after combining with transpose (same for dist?)
 
 DIM = 2
-RESNET_BLOCKS = 20
-RESNET_SIZE = (3, 3)
-FIRST_RESNET_SIZE = (3, 3)
-DIALETED_RESNET_BLOCKS = 20
-DIALETION = [4,8,16]
-DIALETED_RESNET_SIZE = (3, 3)
+RESNET_BLOCKS = 5
+RESNET_SIZE = (15, 15)
+FIRST_RESNET_SIZE = (15, 15)
+DIALETED_RESNET_BLOCKS = 5
+DIALETION = [1,2,4,8,16]
+DIALETED_RESNET_SIZE = (5, 5)
 VARIANT = 1
 EPOCHS = 200
-LR = 0.001
+LR = 0.0005
 TEST_SIZE = 0.05
 BATCH = 32
 DROPOUT = 0.2
 END_CONV_SIZE = 4   # normal is 4
-END_CONV_KER = (3, 3)  # normal is 5
+END_CONV_KER = (5, 5)  # normal is 5
 DIALETED_RESNET_KERNELS = 64
 ACTIVATION = "relu"
 END_ACTIVATION = "elu"
 LOSS = "mse"
 BINS = False
 POOL = False
-files_name = "save_8"
+files_name = "save_14"
 
 
 class PolynomialDecay:
@@ -96,12 +96,12 @@ def d2_net_architecture(variant=2):
     loop_layer = layers.Conv2D(32, FIRST_RESNET_SIZE, padding='same')(input_layer)
 
     for i in range(RESNET_BLOCKS):
-        for loop in DIALETION:
-            conv_layer = layers.Conv2D(32, RESNET_SIZE, activation=ACTIVATION,padding='same', dilation_rate=loop)(loop_layer)
-            conv_layer = layers.Conv2D(32, RESNET_SIZE, padding='same',dilation_rate=loop)(conv_layer)
+        # for loop in DIALETION:
+        #     conv_layer = layers.Conv2D(32, RESNET_SIZE, activation=ACTIVATION,padding='same', dilation_rate=loop)(loop_layer)
+        #     conv_layer = layers.Conv2D(32, RESNET_SIZE, padding='same',dilation_rate=loop)(conv_layer)
 
-            # conv_layer = layers.Conv2D(32, RESNET_SIZE, activation=ACTIVATION, padding='same')(loop_layer)
-            # conv_layer = layers.Conv2D(32, RESNET_SIZE, padding='same')(conv_layer)
+            conv_layer = layers.Conv2D(32, RESNET_SIZE, activation=ACTIVATION, padding='same')(loop_layer)
+            conv_layer = layers.Conv2D(32, RESNET_SIZE, padding='same')(conv_layer)
             batch_layer = layers.BatchNormalization()(conv_layer)
             loop_layer = layers.Add()([batch_layer, loop_layer])
             loop_layer = layers.Activation(ACTIVATION)(loop_layer)
@@ -331,6 +331,18 @@ def print_parameters():
     print("DIALETED_RESNET_KERNELS: " + str(DIALETED_RESNET_KERNELS))
 
 
+def calc_angle_std(trained_model, x, y):
+    y_pred = trained_model.predict(x)
+
+    omega_var = np.mean((np.arctan2(y[1][:,:,:,0], y[1][:,:,:,1]) - np.arctan2(y_pred[1][:,:,:,0], y_pred[1][:,:,:,1]))**2)
+    theta_var = np.mean((np.arctan2(y[2][:,:,:,0], y[2][:,:,:,1]) - np.arctan2(y_pred[2][:,:,:,0], y_pred[2][:,:,:,1]))**2)
+    phi_var = np.mean((np.arctan2(y[3][:,:,:,0], y[3][:,:,:,1]) - np.arctan2(y_pred[3][:,:,:,0], y_pred[3][:,:,:,1]))**2)
+
+    print("Omega atan2 STD: {}".format(omega_var ** 0.5))
+    print("Theta atan2 STD: {}".format(theta_var ** 0.5))
+    print("Phi atan2 STD: {}".format(phi_var ** 0.5))
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -388,3 +400,4 @@ if __name__ == '__main__':
     plot_loss(net_history)
     plot_test(model, X_test, Y_test)
 
+    calc_angle_std(model, X_test, reshape_y(Y_test))

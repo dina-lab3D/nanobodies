@@ -86,7 +86,7 @@ def loop_model(residues, seq, pdb_file, restraints_matrix, env):
                         continue
                     if not residues[i].has_id('CB') or not residues[j].has_id('CB'):
                         continue
-                    rsr.add(forms.gaussian(group=physical.dihedral,feature=features.dihedral(at['CA:' + str(i+1)], at['CB:' + str(i+1)], at['CB:' + str(j+1)], at['CA:' + str(j+1)]),mean=omega_restraints[i,j], stdev=0.25))
+                    rsr.add(forms.gaussian(group=physical.dihedral,feature=features.dihedral(at['CA:' + str(i+1)], at['CB:' + str(i+1)], at['CB:' + str(j+1)], at['CA:' + str(j+1)]),mean=omega_restraints[i,j], stdev=1))
 
             #  thethas
             thetha_restraints = np.arctan2(remove_pad(seq, restraints_matrix[2][0,:,:,0],3), remove_pad(seq, restraints_matrix[2][0,:,:,1],3))
@@ -96,7 +96,7 @@ def loop_model(residues, seq, pdb_file, restraints_matrix, env):
                         continue
                     if not residues[i].has_id('CB') or not residues[j].has_id('CB'):
                         continue
-                    rsr.add(forms.gaussian(group=physical.dihedral,feature=features.dihedral(at['N:' + str(i+1)], at['CA:' + str(i+1)], at['CB:' + str(i+1)], at['CB:' + str(j+1)]),mean=thetha_restraints[i,j], stdev=0.15))
+                    rsr.add(forms.gaussian(group=physical.dihedral,feature=features.dihedral(at['N:' + str(i+1)], at['CA:' + str(i+1)], at['CB:' + str(i+1)], at['CB:' + str(j+1)]),mean=thetha_restraints[i,j], stdev=1))
 
             #  phis
             phis_restraints = np.arctan2(remove_pad(seq, restraints_matrix[3][0,:,:,0],3), remove_pad(seq, restraints_matrix[3][0,:,:,1],3))
@@ -106,7 +106,7 @@ def loop_model(residues, seq, pdb_file, restraints_matrix, env):
                         continue
                     if not residues[i].has_id('CB') or not residues[j].has_id('CB'):
                         continue
-                    rsr.add(forms.gaussian(group=physical.angle,feature=features.angle(at['CA:' + str(i+1)], at['CB:' + str(i+1)], at['CB:' + str(j+1)]),mean=phis_restraints[i,j], stdev=0.1))
+                    rsr.add(forms.gaussian(group=physical.angle,feature=features.angle(at['CA:' + str(i+1)], at['CB:' + str(i+1)], at['CB:' + str(j+1)]),mean=phis_restraints[i,j], stdev=1))
 
     return MyLoop(env,inimodel=pdb_file,sequence='NANO')
 
