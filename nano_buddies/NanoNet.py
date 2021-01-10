@@ -20,12 +20,12 @@ tf.keras.utils.get_custom_objects().update({'swish': layers.Activation(swish)})
 # idea - calculate tanh of omega after combining with transpose (same for dist?)
 
 DIM = 2
-RESNET_BLOCKS = 3
-RESNET_SIZE = (17, 17)
-FIRST_RESNET_SIZE = (17, 17)
-DIALETED_RESNET_BLOCKS = 5
-DIALETION = [1,2,4,8,16]
-DIALETED_RESNET_SIZE = (5, 5)
+RESNET_BLOCKS = 20
+RESNET_SIZE = (3, 3)
+FIRST_RESNET_SIZE = (3, 3)
+DIALETED_RESNET_BLOCKS = 20
+DIALETION = [4,8,16]
+DIALETED_RESNET_SIZE = (3, 3)
 VARIANT = 1
 EPOCHS = 200
 LR = 0.001
@@ -33,14 +33,14 @@ TEST_SIZE = 0.05
 BATCH = 32
 DROPOUT = 0.2
 END_CONV_SIZE = 4   # normal is 4
-END_CONV_KER = (5, 5)  # normal is 5
+END_CONV_KER = (3, 3)  # normal is 5
 DIALETED_RESNET_KERNELS = 64
 ACTIVATION = "relu"
 END_ACTIVATION = "elu"
 LOSS = "mse"
 BINS = False
 POOL = False
-files_name = "save_9"
+files_name = "save_8"
 
 
 class PolynomialDecay:
@@ -96,9 +96,12 @@ def d2_net_architecture(variant=2):
     loop_layer = layers.Conv2D(32, FIRST_RESNET_SIZE, padding='same')(input_layer)
 
     for i in range(RESNET_BLOCKS):
-        # for loop in [1,2,4,8,16]:
-            conv_layer = layers.Conv2D(32, RESNET_SIZE, activation=ACTIVATION, padding='same')(loop_layer)
-            conv_layer = layers.Conv2D(32, RESNET_SIZE, padding='same')(conv_layer)
+        for loop in DIALETION:
+            conv_layer = layers.Conv2D(32, RESNET_SIZE, activation=ACTIVATION,padding='same', dilation_rate=loop)(loop_layer)
+            conv_layer = layers.Conv2D(32, RESNET_SIZE, padding='same',dilation_rate=loop)(conv_layer)
+
+            # conv_layer = layers.Conv2D(32, RESNET_SIZE, activation=ACTIVATION, padding='same')(loop_layer)
+            # conv_layer = layers.Conv2D(32, RESNET_SIZE, padding='same')(conv_layer)
             batch_layer = layers.BatchNormalization()(conv_layer)
             loop_layer = layers.Add()([batch_layer, loop_layer])
             loop_layer = layers.Activation(ACTIVATION)(loop_layer)
