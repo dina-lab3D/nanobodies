@@ -25,13 +25,16 @@ if __name__ == '__main__':
             print(directory)
             for pdb in tqdm(os.listdir(os.getcwd())):
                 if os.path.isdir(pdb):
-                    if not valid_pdb(pdb):
+                    os.chdir(pdb)
+                    if not valid_pdb("ref.pdb"):
                         print(directory + ": " + pdb + ", FAILED")
                         failed_pdbs = failed_pdbs.append(pd.DataFrame({"PDB":[pdb], "FOLDER":[directory]}))
+                        os.chdir("..")
                         continue
-                    feature_matrix.append(generate_label(pdb))
-                    input_matrix.append(generate_input(pdb))
+                    feature_matrix.append(generate_label(pdb + ".fa", "ref.pdb"))
+                    input_matrix.append(generate_input(pdb+ ".fa"))
                     pdb_names.append(os.path.join(directory,pdb))
+                    os.chdir("..")
             os.chdir("..")
     feature_matrix = np.stack(feature_matrix, axis=0)
     input_matrix = np.stack(input_matrix, axis=0)
@@ -46,6 +49,9 @@ if __name__ == '__main__':
     #     labels_file_name += "_bins"
     #     pdb_names_file += "pdb_names"
 
+    print("Number of valid samples: {}".format(len(pdb_names)))
+    print("Total number of faild samples: {}".format(len(failed_pdbs["PDB"])))
+    
     pickle.dump(feature_matrix, open(labels_file_name + ".pkl", "wb"))
     pickle.dump(input_matrix, open(input_file_name + ".pkl", "wb"))
     pickle.dump(np.array(pdb_names), open(pdb_names_file + ".pkl", "wb"))
