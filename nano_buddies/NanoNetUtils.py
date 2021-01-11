@@ -172,7 +172,7 @@ def get_theta(pep_residues, start, end, pad=0):
             angles[i + pad][j + pad] = np.degrees(angle) % 360
     # if BINS:
     #     return angles
-    return np.dstack([cos_theta, sin_theta])
+    return np.dstack([sin_theta, cos_theta])
 
 
 def get_phi(pep_residues, start, end, pad=0):
@@ -202,7 +202,7 @@ def get_phi(pep_residues, start, end, pad=0):
             angles[i+pad][j+pad] = np.degrees(angle) % 360
     # if BINS:
     #     return angles
-    return np.dstack([cos_phi, sin_phi])
+    return np.dstack([sin_phi, cos_phi])
 
 
 def get_omega(pep_residues, start, end, pad=0):
@@ -232,7 +232,7 @@ def get_omega(pep_residues, start, end, pad=0):
             angles[i+pad][j+pad] = np.degrees(angle) % 360
     # if BINS:
     #     return angles
-    return np.dstack([cos_omega, sin_omega])
+    return np.dstack([sin_omega, cos_omega])
 
 
 def generate_label(fasta, pdb):

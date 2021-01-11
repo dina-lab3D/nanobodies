@@ -8,8 +8,8 @@ import os
 
 
 DIST_STD = 0.7
-OMEGA_STD = 0
-THETA_STD = 0
+OMEGA_STD = 2
+THETA_STD = 1.7
 PHI_STD = 0
 
 

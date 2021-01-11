@@ -20,9 +20,9 @@ tf.keras.utils.get_custom_objects().update({'swish': layers.Activation(swish)})
 # idea - calculate tanh of omega after combining with transpose (same for dist?)
 
 DIM = 2
-RESNET_BLOCKS = 5
-RESNET_SIZE = (15, 15)
-FIRST_RESNET_SIZE = (15, 15)
+RESNET_BLOCKS = 3
+RESNET_SIZE = (17, 17)
+FIRST_RESNET_SIZE = (17, 17)
 DIALETED_RESNET_BLOCKS = 5
 DIALETION = [1,2,4,8,16]
 DIALETED_RESNET_SIZE = (5, 5)
@@ -40,7 +40,7 @@ END_ACTIVATION = "elu"
 LOSS = "mse"
 BINS = False
 POOL = False
-files_name = "save_14"
+files_name = "best_7"
 
 
 class PolynomialDecay:
@@ -293,8 +293,8 @@ def plot_test(trained_model, test_X, test_Y):
             else:
                 sns.heatmap(test_Y[i][j,:,:,1], ax=axes[j][0],xticklabels=False, yticklabels=False, cbar=False)
                 sns.heatmap(pred_Y[j][i,:,:,1], ax=axes[j][1],xticklabels=False, yticklabels=False, cbar=False)
-                # sns.heatmap(tf.math.atan2(x=test_Y[i][j,:,:,0],y=test_Y[i][j,:,:,1]), ax=axes[j][0],xticklabels=False, yticklabels=False, cbar=False)
-                # sns.heatmap(tf.math.atan2(x=pred_Y[j][i,:,:,0],y=pred_Y[j][i,:,:,1]), ax=axes[j][1],xticklabels=False, yticklabels=False, cbar=False)
+                # sns.heatmap(np.arctan2(test_Y[i][j,:,:,0],test_Y[i][j,:,:,1]), ax=axes[j][0],xticklabels=False, yticklabels=False, cbar=False)
+                # sns.heatmap(np.arctan2(pred_Y[j][i,:,:,0],pred_Y[j][i,:,:,1]), ax=axes[j][1],xticklabels=False, yticklabels=False, cbar=False)
 
             axes[j][0].set_title(names[j] + " true")
             axes[j][1].set_title(names[j] + " predicted")
@@ -331,16 +331,26 @@ def print_parameters():
     print("DIALETED_RESNET_KERNELS: " + str(DIALETED_RESNET_KERNELS))
 
 
+def angle(angle1, angle2):
+    a = angle1 - angle2
+    a = (a + np.pi) % (2*np.pi) - np.pi
+    print(abs(a))
+
+
 def calc_angle_std(trained_model, x, y):
     y_pred = trained_model.predict(x)
 
-    omega_var = np.mean((np.arctan2(y[1][:,:,:,0], y[1][:,:,:,1]) - np.arctan2(y_pred[1][:,:,:,0], y_pred[1][:,:,:,1]))**2)
-    theta_var = np.mean((np.arctan2(y[2][:,:,:,0], y[2][:,:,:,1]) - np.arctan2(y_pred[2][:,:,:,0], y_pred[2][:,:,:,1]))**2)
-    phi_var = np.mean((np.arctan2(y[3][:,:,:,0], y[3][:,:,:,1]) - np.arctan2(y_pred[3][:,:,:,0], y_pred[3][:,:,:,1]))**2)
+    omega_diff = np.arctan2(y[1][:,:,:,0], y[1][:,:,:,1]) - np.arctan2(y_pred[1][:,:,:,0], y_pred[1][:,:,:,1])
+    theta_diff = np.arctan2(y[2][:,:,:,0], y[2][:,:,:,1]) - np.arctan2(y_pred[2][:,:,:,0], y_pred[2][:,:,:,1])
+    phi_diff = np.arctan2(y[3][:,:,:,0], y[3][:,:,:,1]) - np.arctan2(y_pred[3][:,:,:,0], y_pred[3][:,:,:,1])
 
-    print("Omega atan2 STD: {}".format(omega_var ** 0.5))
-    print("Theta atan2 STD: {}".format(theta_var ** 0.5))
-    print("Phi atan2 STD: {}".format(phi_var ** 0.5))
+    omega_diff = ((omega_diff + np.pi) % (2*np.pi) - np.pi)**2
+    theta_diff = ((theta_diff + np.pi) % (2*np.pi) - np.pi)**2
+    phi_diff = ((phi_diff + np.pi) % (2*np.pi) - np.pi)**2
+
+    print("Omega atan2 STD: {}".format(np.mean(omega_diff) ** 0.5))
+    print("Theta atan2 STD: {}".format(np.mean(theta_diff) ** 0.5))
+    print("Phi atan2 STD: {}".format(np.mean(phi_diff) ** 0.5))
 
 
 if __name__ == '__main__':
