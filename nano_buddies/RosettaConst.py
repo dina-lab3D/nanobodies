@@ -8,9 +8,9 @@ import os
 
 
 DIST_STD = 0.7
-OMEGA_STD = 2
-THETA_STD = 1.7
-PHI_STD = 0
+OMEGA_STD = 1
+THETA_STD = 1
+PHI_STD = 0.7
 
 
 def write_const_dist(const_file, constraints, cdr3_s, seq):
@@ -46,7 +46,7 @@ def write_const_theta(const_file, constraints, cdr3_s, seq):
     length = len(constraints)
     for i in range(length):
         for j in range(length):
-            if i == j:
+            if i == j:  # same atom...
                 continue
             atom_i = i + cdr3_s
             atom_j = j + cdr3_s
@@ -62,7 +62,7 @@ def write_const_phi(const_file, constraints, cdr3_s, seq):
     length = len(constraints)
     for i in range(length):
         for j in range(length):
-            if i == j:
+            if i == j:  # same atom...
                 continue
             atom_i = i + cdr3_s
             atom_j = j + cdr3_s
@@ -94,9 +94,9 @@ def write_const_file(fasta_file, restraints_matrix):
     seq = get_sequence(fasta_file)
 
     distance_restraints = remove_pad(restraints_matrix[0][0,:,:,0], seq)
-    omega_restraints = np.arctan2(remove_pad(restraints_matrix[1][0, :, :, 0], seq),remove_pad(restraints_matrix[1][0, :, :, 1], seq))
-    thetha_restraints = np.arctan2(remove_pad(restraints_matrix[2][0, :, :, 0], seq),remove_pad(restraints_matrix[2][0, :, :, 1], seq))
-    phis_restraints = np.arctan2(remove_pad(restraints_matrix[3][0, :, :, 0], seq),remove_pad(restraints_matrix[3][0, :, :, 1], seq))
+    omega_restraints = np.arctan2(remove_pad(restraints_matrix[1][0, :, :, 1], seq),remove_pad(restraints_matrix[1][0, :, :, 0], seq))  # angle = arctan(sin, cos)
+    thetha_restraints = np.arctan2(remove_pad(restraints_matrix[2][0, :, :, 1], seq),remove_pad(restraints_matrix[2][0, :, :, 0], seq))
+    phis_restraints = np.arctan2(remove_pad(restraints_matrix[3][0, :, :, 1], seq),remove_pad(restraints_matrix[3][0, :, :, 0], seq))
 
     cdr_s, cdr_e = cdr_annotation.find_cdr3(seq)
     sanity_check(distance_restraints, cdr_s, cdr_e)

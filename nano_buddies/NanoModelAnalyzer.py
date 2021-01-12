@@ -19,11 +19,11 @@ LENGTH_PATH = "/cs/labs/dina/tomer.cohen13/lengths"
 LENGTH_FILE = "nano_length.txt"
 
 
-SCORES_FILE = "network_scores.txt"
+SCORES_FILE = "scores.txt"
 
-PLOTS_PATH = "nanonet_model_plots"
-SUMMERY_FILE = "nanonet_model_summery"
-NANO_NET = True
+PLOTS_PATH = "model_plots"
+SUMMERY_FILE = "model_summery"
+NANO_NET = False
 
 # number of models to take in general
 TOP_SCORES_N = 10
