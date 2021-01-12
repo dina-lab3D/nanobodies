@@ -4,13 +4,13 @@ import os
 import subprocess
 
 
-MODE = 'loop_restraints'  # "loop_restraints" or "model_nanobody
+MODE = 'rosetta_model'  # "loop_restraints" or "model_nanobody
 
 # max memory for each batch
 MEMORY = "7000m"
 
 # max time for each batch
-TIME = "24:0:0"
+TIME = "4:0:0"
 
 # NanoModelScript.py path
 SCRIPT_PATH = "/cs/labs/dina/tomer.cohen13/nanobodies/nano_buddies/NanoModelScript.py"
@@ -97,6 +97,7 @@ if __name__ == '__main__':
                 f.write("setenv ROSETTA3_DB $ROSETTA/main/database\n")
                 f.write("setenv ROSETTA_BIN $ROSETTA/main/source/bin\n")
                 f.write("setenv PATH $PATH':'$ROSETTA_BIN\n")
+                f.write("setenv PATH $PATH':'/cs/labs/dina/tomer.cohen13/Blast/bin\n")
                 f.write("antibody.linuxgccrelease -exclude_homologs true -vhh_only -out:file:scorefile scores.txt -fasta " + pdb_dir+".fa | tee grafting.log\n")
                 f.write("cd grafting\n")
                 f.write("rm -f debug*\n")
