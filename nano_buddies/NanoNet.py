@@ -28,7 +28,8 @@ DIALETION = [1,2,4,8,16]
 DIALETED_RESNET_SIZE = (5, 5)
 EPOCHS = 200
 LR = 0.0005
-TEST_SIZE = 0.05
+TEST_SIZE = 50/2185  # 50 nano-bodies
+VAL_SIZE = 0.09  # 150 nano-bodies
 BATCH = 32
 DROPOUT = 0.2
 END_CONV_SIZE = 4   # normal is 4
@@ -39,7 +40,7 @@ END_ACTIVATION = "elu"
 LOSS = "mse"
 BINS = False
 POOL = False
-files_name = "best_6"
+files_name = "a_final_7"
 
 
 class PolynomialDecay:
@@ -290,13 +291,18 @@ if __name__ == '__main__':
 
     #  all features
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=LR), loss=LOSS)  # TODO: use huber loss on angles?
-    net_history = model.fit(X_train, reshape_y(Y_train), validation_data=(X_test, reshape_y(Y_test)), epochs=EPOCHS, verbose=1, batch_size=BATCH, callbacks=[save_model])
+    net_history = model.fit(X_train, reshape_y(Y_train), validation_split=VAL_SIZE, epochs=EPOCHS, verbose=1, batch_size=BATCH, callbacks=[save_model])
 
     loss = model.evaluate(X_test, reshape_y(Y_test))
     print("##################################################################")
     print("test loss: {}".format(loss))
     print("##################################################################")
-    
+    model = tf.keras.models.load_model(files_name)
+    loss = model.evaluate(X_test, reshape_y(Y_test))
+    print("##################################################################")
+    print("test loss: {}".format(loss))
+    print("##################################################################")
+
     print_parameters()
 
     plot_loss(net_history)
