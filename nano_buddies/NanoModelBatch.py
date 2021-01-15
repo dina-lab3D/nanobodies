@@ -7,10 +7,10 @@ import subprocess
 MODE = 'rosetta_loops'
 
 # max memory for each batch
-MEMORY = "7000m"
+MEMORY = "4500m"
 
 # max time for each batch
-TIME = "48:0:0"
+TIME = "5-0"
 
 # NanoModelScript.py path
 SCRIPT_PATH = "/cs/labs/dina/tomer.cohen13/nanobodies/nano_buddies/NanoModelScript.py"
@@ -22,20 +22,17 @@ FLAGS = "-t -l 100"
 RESTRAINTS_PATH = "/cs/labs/dina/tomer.cohen13/nanobodies/nano_buddies/LoopRestraints.py"
 
 # trained nano_net model path
-NANO_NET_MODEL_PATH = "/cs/labs/dina/tomer.cohen13/NN/NanoNetPDBs/save_2"
+NANO_NET_MODEL_PATH = "/cs/labs/dina/tomer.cohen13/NN/NanoNetPDBs/NanoNet_model"
 
-DISULF_PDBS = ["4M1C_1", "4LST_1", "4OM1_1", "5BK1_1", "2X89_1", "4XNZ_1", "6GJQ_1",
-               "5V6L_1", "5O03_1", "6H5N_1"]
 
-FAILED = ["2VH5_1", "3EO9_1", "4NHG_1", "4X7C_2", "5O05_1", "6E9Q_1"]
+FAILED = ["1YC7_1"]
 
 # the begining of the script for cluster
 INTRO = "#!/bin/tcsh\n" \
         "#SBATCH --mem="+ MEMORY +"\n" \
         "#SBATCH -c2\n" \
         "#SBATCH --time=" + TIME + "\n" \
-        "#SBATCH -n 1\n" \
-        "#SBATCH --array=1-24\n"
+        "#SBATCH --array=1-3\n"
 
 
 if __name__ == '__main__':
@@ -108,7 +105,7 @@ if __name__ == '__main__':
                 f.write("setenv ROSETTA_BIN $ROSETTA/main/source/bin\n")
                 f.write("setenv PATH $PATH':'$ROSETTA_BIN\n")
                 f.write("setenv PATH $PATH':'/cs/labs/dina/tomer.cohen13/Blast/bin\n")
-                f.write("antibody.linuxgccrelease -exclude_homologs true -vhh_only -fasta " + pdb_dir+".fa | tee grafting.log\n")
+                f.write("antibody.linuxgccrelease -exclude_homologs true -vhh_only  -fasta " + pdb_dir+".fa -antibody:h1_template 1rzi | tee grafting.log\n")
                 f.write("cd grafting\n")
                 f.write("rm -f debug*\n")
                 f.write("rm -f orientation*\n")
@@ -134,7 +131,7 @@ if __name__ == '__main__':
                 f.write("setenv ROSETTA_BIN $ROSETTA/main/source/bin\n")
                 f.write("setenv PATH $PATH':'$ROSETTA_BIN\n")
                 f.write("setenv PATH $PATH':'/cs/labs/dina/tomer.cohen13/Blast/bin\n")
-                f.write("antibody_H3.linuxgccrelease @abH3.flags -s grafting/model-0.relaxed.pdb -nstruct 100 -out:file:scorefile H3_modeling_scores.fasc -out:path:pdb H3_modeling > h3_modeling-0.log\n")
+                f.write("antibody_H3.linuxgccrelease @abH3.flags -s grafting/model-0.relaxed.pdb -nstruct 200 -out:file:scorefile H3_modeling_scores.fasc -out:path:pdb H3_modeling > h3_modeling-0.log\n")
                 # for model in range(1,10):
                 #     f.write("antibody_H3.linuxgccrelease @abH3.flags -s grafting/model-{}.relaxed.pdb -nstruct 100 > h3_modeling-{}.log\n".format(model, model))
             subprocess.run("sbatch " + script_name, shell=True)  # sends script to the cluster

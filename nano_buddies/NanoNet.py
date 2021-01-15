@@ -29,7 +29,7 @@ DIALETED_RESNET_SIZE = (5, 5)
 EPOCHS = 200
 LR = 0.0005
 TEST_SIZE = 50/2185  # 50 nano-bodies
-VAL_SIZE = 0.09  # 150 nano-bodies
+VAL_SIZE = 0.055  # 150 nano-bodies
 BATCH = 32
 DROPOUT = 0.2
 END_CONV_SIZE = 4   # normal is 4
@@ -40,7 +40,7 @@ END_ACTIVATION = "elu"
 LOSS = "mse"
 BINS = False
 POOL = False
-files_name = "a_final_7"
+files_name = "z_final_6"
 
 
 class PolynomialDecay:
