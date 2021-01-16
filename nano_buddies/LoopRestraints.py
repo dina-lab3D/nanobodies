@@ -30,6 +30,10 @@ rmsd_align = "/cs/staff/dina/scripts/alignRMSD.pl"
 get_frag_chain = "/cs/staff/dina/utils/get_frag_chain.Linux"
 
 loop_model_num = 1000
+DIST_STD = 0.63
+OMEGA_STD = 0.424
+THETA_STD = 0.3
+PHI_STD = 0.22
 
 
 def get_sequence(fasta_filename):
@@ -76,7 +80,7 @@ def loop_model(residues, seq, pdb_file, restraints_matrix, env):
                         atom_i = 'CA:'
                     if not residues[j+cdr3_s].has_id('CB'):
                         atom_j = 'CA:'
-                    rsr.add(forms.gaussian(group=physical.xy_distance,feature=features.distance(at[atom_i + str(i+1+cdr3_s)], at[atom_j + str(j+1+cdr3_s)]),mean=distance_restraints[i,j], stdev=0.7))
+                    rsr.add(forms.gaussian(group=physical.xy_distance,feature=features.distance(at[atom_i + str(i+1+cdr3_s)], at[atom_j + str(j+1+cdr3_s)]),mean=distance_restraints[i,j], stdev=DIST_STD))
 
             #  omegas
             omega_restraints = np.arctan2(remove_pad(restraints_matrix[1][0,:,:,1],seq), remove_pad(restraints_matrix[1][0,:,:,0],seq))
@@ -86,7 +90,7 @@ def loop_model(residues, seq, pdb_file, restraints_matrix, env):
                         continue
                     if not residues[i+cdr3_s].has_id('CB') or not residues[j+cdr3_s].has_id('CB'):
                         continue
-                    rsr.add(forms.gaussian(group=physical.dihedral,feature=features.dihedral(at['CA:' + str(i+1+cdr3_s)], at['CB:' + str(i+1+cdr3_s)], at['CB:' + str(j+1+cdr3_s)], at['CA:' + str(j+1+cdr3_s)]),mean=omega_restraints[i,j], stdev=1.2))
+                    rsr.add(forms.gaussian(group=physical.dihedral,feature=features.dihedral(at['CA:' + str(i+1+cdr3_s)], at['CB:' + str(i+1+cdr3_s)], at['CB:' + str(j+1+cdr3_s)], at['CA:' + str(j+1+cdr3_s)]),mean=omega_restraints[i,j], stdev=OMEGA_STD))
 
             #  thethas
             thetha_restraints = np.arctan2(remove_pad(restraints_matrix[2][0,:,:,1],seq), remove_pad(restraints_matrix[2][0,:,:,0],seq))
@@ -96,7 +100,7 @@ def loop_model(residues, seq, pdb_file, restraints_matrix, env):
                         continue
                     if not residues[i+cdr3_s].has_id('CB') or not residues[j+cdr3_s].has_id('CB'):
                         continue
-                    rsr.add(forms.gaussian(group=physical.dihedral,feature=features.dihedral(at['N:' + str(i+1+cdr3_s)], at['CA:' + str(i+1+cdr3_s)], at['CB:' + str(i+1+cdr3_s)], at['CB:' + str(j+1+cdr3_s)]),mean=thetha_restraints[i,j], stdev=1))
+                    rsr.add(forms.gaussian(group=physical.dihedral,feature=features.dihedral(at['N:' + str(i+1+cdr3_s)], at['CA:' + str(i+1+cdr3_s)], at['CB:' + str(i+1+cdr3_s)], at['CB:' + str(j+1+cdr3_s)]),mean=thetha_restraints[i,j], stdev=THETA_STD))
 
             #  phis
             phis_restraints = np.arctan2(remove_pad(restraints_matrix[3][0,:,:,1],seq), remove_pad(restraints_matrix[3][0,:,:,0],seq))
@@ -106,7 +110,7 @@ def loop_model(residues, seq, pdb_file, restraints_matrix, env):
                         continue
                     if not residues[i+cdr3_s].has_id('CB') or not residues[j+cdr3_s].has_id('CB'):
                         continue
-                    rsr.add(forms.gaussian(group=physical.angle,feature=features.angle(at['CA:' + str(i+1+cdr3_s)], at['CB:' + str(i+1+cdr3_s)], at['CB:' + str(j+1+cdr3_s)]),mean=phis_restraints[i,j], stdev=0.7))
+                    rsr.add(forms.gaussian(group=physical.angle,feature=features.angle(at['CA:' + str(i+1+cdr3_s)], at['CB:' + str(i+1+cdr3_s)], at['CB:' + str(j+1+cdr3_s)]),mean=phis_restraints[i,j], stdev=PHI_STD))
 
     return MyLoop(env,inimodel=pdb_file,sequence='NANO')
 
