@@ -9,8 +9,6 @@ import os,sys,getopt
 
 
 rmsd_prog = "/cs/staff/dina/utils/rmsd"
-get_pdb = "/cs/staff/dina/scripts/getPDB.pl"
-get_pdb_chains = "/cs/staff/dina/scripts/getPDBChains.pl"
 renumber = "/cs/staff/dina/utils/srcs/renumber/renumber"
 rmsd_align = "/cs/staff/dina/scripts/alignRMSD.pl"
 get_frag_chain = "/cs/staff/dina/utils/get_frag_chain.Linux"
@@ -78,8 +76,4 @@ if __name__ == '__main__':
     rosetta_scores["cdr3_rmsd"] = cdr3_rmsds
 
     rosetta_scores.to_csv("H3_modeling_scores_rmsd.csv", index=False)
-
-
-
-
     print("ended successfully")
