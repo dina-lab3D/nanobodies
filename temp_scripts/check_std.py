@@ -31,7 +31,6 @@ if __name__ == '__main__':
             tan_std = (np.sum(diff**2) / 160) ** 0.5
             stds.append(tan_std)
 
-
         mean_std = np.mean(stds)
         sanity_std = np.mean(sanity_stds)
 
