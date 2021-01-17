@@ -270,3 +270,8 @@ def generate_label(fasta, pdb):
     #     labels_matrix = matrix_to_bins(labels_matrix)
     return labels_matrix
 
+
+# seq = "EVKLLESGGGLVQPGGSLKLSCAASGFDFSKYWMSWVRQAPGKGLEWIGEIHPDSGTINYTPSLKDKFIISRDNAKNSLYLQMSKVRSEDTALYYCARLHYYGYNAYWGQGTLVTVSA"
+# a, b = find_cdr3(seq)
+# print(a)
+# print(seq[a:b])
