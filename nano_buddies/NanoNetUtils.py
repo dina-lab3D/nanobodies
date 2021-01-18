@@ -13,6 +13,7 @@ AA_DICT = {"A": 0, "C": 1, "D": 2, "E": 3, "F": 4, "G": 5, "H": 6, "I": 7, "K": 
            "Q": 13, "R": 14, "S": 15, "T": 16, "W": 17, "Y": 18, "V": 19, "-": 20, "X": 20}
 
 
+
 def get_sequence(fasta_filename):
     for seq_record in SeqIO.parse(fasta_filename, "fasta"):
         sequence = str(seq_record.seq)
@@ -91,14 +92,12 @@ def remove_pad(one_hot_matrix, seq):
     return one_hot_matrix[pad_left:pad_right, pad_left:pad_right]
 
 
-def generate_input(pdb_fasta):
-    """
+def generate_input(pdb_fasta, fasta=True):
 
-    :param pdb:
-    :return:
-    """
-
-    seq = get_sequence(pdb_fasta)
+    if fasta:
+        seq = get_sequence(pdb_fasta)
+    else:
+        seq = pdb_fasta
     cdr3_matrix = one_hot_coding(seq, 3)
 
     if "X" in seq:
@@ -271,7 +270,31 @@ def generate_label(fasta, pdb):
     return labels_matrix
 
 
-# seq = "EVKLLESGGGLVQPGGSLKLSCAASGFDFSKYWMSWVRQAPGKGLEWIGEIHPDSGTINYTPSLKDKFIISRDNAKNSLYLQMSKVRSEDTALYYCARLHYYGYNAYWGQGTLVTVSA"
+# seq = "QLLESGPGLVKPSETLSLTCTVSGGSIWGWIRQPPGKGLEWIGSIYSSGSTYYNPSLKSRVTTSVDTSKNQFSLRLSSVTAADTAVYYCVAWFGDLLSLKGVELWGQGTLVTVSS"
 # a, b = find_cdr3(seq)
 # print(a)
-# print(seq[a:b])
+# print(seq[a:b+1])
+# print(seq)
+# model = PDBParser().get_structure("/cs/labs/dina/tomer.cohen13/NN/RosettaFasta/2YK1_1/grafting/model-0.relaxed.pdb", "/cs/labs/dina/tomer.cohen13/NN/RosettaFasta/2YK1_1/grafting/model-0.relaxed.pdb")[0]["H"]
+# seq, aa_residues = get_seq(model)
+#
+# a, b = find_cdr3(seq)
+# print(a)
+# print(seq[a:b+1])
+# print(seq)
+#
+# for aa in aa_residues:
+#     print(aa.get_id())
+# (",d","dd").
+
+# dir = "/cs/labs/dina/tomer.cohen13/NN/NanoNetPDBs"
+# os.chdir(dir)
+# for number in range(1,12):
+#     os.chdir("{}/{}".format(dir, number))
+#     for pdb in os.listdir(os.getcwd()):
+#         seq = get_sequence("{}/{}.fa".format(pdb, pdb))
+#         a, b = find_cdr3(seq)
+#
+#
+#         if b-a < 6:
+#             print(pdb + " : " + seq[a:b+1])
