@@ -61,53 +61,52 @@ if __name__ == '__main__':
 
 
 
-    # dir = "/cs/usr/tomer.cohen13/lab/NN/RosettaFasta"
+    dir = "/cs/usr/tomer.cohen13/lab/NN/RosettaFasta"
     # flags_path = "/cs/labs/dina/tomer.cohen13/NN/abH3.flags"
-    # os.chdir(dir)
-    #
-    # for pdb_dir in os.listdir(os.getcwd()):
-    #
-    #
-    #
-    #     os.chdir(pdb_dir)
-    #     subprocess.run("rm -f ROSETTA_CRASH.log" ,shell=True)
-    #     subprocess.run("rm -f h3_modeling-0.log", shell=True)
-    #     subprocess.run("rm -f slurm*", shell=True)
-    #     # subprocess.run("rm -f abH3.flags", shell=True)
-    #     subprocess.run("rm -rf H3_modeling", shell=True)
-    #     os.mkdir("H3_modeling")
-    #     subprocess.run("cp /cs/labs/dina/tomer.cohen13/NN/abH3.flags /cs/labs/dina/tomer.cohen13/NN/RosettaFasta/" + pdb_dir,shell=True)
-    #
-    #     # with open(pdb_dir+'.fa', 'r') as file:
-    #     #     # read a list of lines into data
-    #     #     data = file.readlines()
-    #     #
-    #     # data[0] = '>heavy\n'
-    #     #
-    #     # # and write everything back
-    #     # with open(pdb_dir+'.fa', 'w') as file:
-    #     #     file.writelines(data)
-    #     #
-    #     #
-    #     os.chdir("..")
-    # exit()
+    os.chdir(dir)
 
+    for pdb_dir in os.listdir(os.getcwd()):
+        if pdb_dir != "1YC7_1" and pdb_dir != "6QN8_1":
+            os.chdir(pdb_dir)
+            # subprocess.run("rm -f ROSETTA_CRASH.log" ,shell=True)
+            # subprocess.run("rm -f h3_nanonet_modeling-0.log", shell=True)
+            # subprocess.run("rm -f slurm*", shell=True)
+            # # subprocess.run("rm -f abH3.flags", shell=True)
+            # subprocess.run("rm -rf H3_NanoNet_modeling", shell=True)
+            # os.mkdir("H3_modeling")
+            subprocess.run("rm -f H3_NanoNet_modeling_scores.fasc", shell=True)
+            # subprocess.run("cp /cs/labs/dina/tomer.cohen13/NN/abH3.flags /cs/labs/dina/tomer.cohen13/NN/RosettaFasta/" + pdb_dir,shell=True)
 
-    os.chdir("/cs/usr/tomer.cohen13/lab/NN/NanoNetPDBs")
-    for folder_n in os.listdir(os.getcwd()):
-        if os.path.isdir(folder_n) and re.fullmatch('[0-9]+', folder_n):
-            os.chdir(folder_n)
-            print(folder_n)
-            for pdb in tqdm(os.listdir(os.getcwd())):
-                os.chdir(pdb)
-                # if os.path.exists(pdb):
-                #     os.chdir(pdb)
-                #     subprocess.run("mv * ..", shell=True)
-                #     os.chdir("..")
-                #     subprocess.run("rm -rf " + pdb, shell=True)
-                subprocess.run("rm -f slurm-*", shell=True)
-                os.chdir("..")
+        # with open(pdb_dir+'.fa', 'r') as file:
+        #     # read a list of lines into data
+        #     data = file.readlines()
+        #
+        # data[0] = '>heavy\n'
+        #
+        # # and write everything back
+        # with open(pdb_dir+'.fa', 'w') as file:
+        #     file.writelines(data)
+        #
+        #
             os.chdir("..")
+    exit()
+
+
+    # os.chdir("/cs/usr/tomer.cohen13/lab/NN/NanoNetPDBs")
+    # for folder_n in os.listdir(os.getcwd()):
+    #     if os.path.isdir(folder_n) and re.fullmatch('[0-9]+', folder_n):
+    #         os.chdir(folder_n)
+    #         print(folder_n)
+    #         for pdb in tqdm(os.listdir(os.getcwd())):
+    #             os.chdir(pdb)
+    #             # if os.path.exists(pdb):
+    #             #     os.chdir(pdb)
+    #             #     subprocess.run("mv * ..", shell=True)
+    #             #     os.chdir("..")
+    #             #     subprocess.run("rm -rf " + pdb, shell=True)
+    #             subprocess.run("rm -f slurm-*", shell=True)
+    #             os.chdir("..")
+    #         os.chdir("..")
 
             #     if os.path.exists("nanobodies.tar"):
             #         if os.path.exists("model_0.pdb"):
