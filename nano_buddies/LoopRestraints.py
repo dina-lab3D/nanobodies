@@ -69,7 +69,7 @@ def loop_model(residues, seq, pdb_file, restraints_matrix, env):
             at = self.atoms
 
             #  distances
-            distance_restraints = remove_pad(restraints_matrix[0][0,:,:,0],seq)
+            distance_restraints = remove_pad(restraints_matrix[0][0,:,:,0],seq) * 10
             for i in range(distance_restraints.shape[0]):
                 for j in range(distance_restraints.shape[1]):
                     if i == j:
