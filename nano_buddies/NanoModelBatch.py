@@ -4,7 +4,7 @@ import os
 import subprocess
 
 # 'loop_restraints'/'model_nanobody'/'rosetta_model'/'rosetta_loops'
-MODE = 'rosetta_model'
+MODE = 'rosetta_loops'
 
 # NanoModelScript.py path
 SCRIPT_PATH = "/cs/labs/dina/tomer.cohen13/nanobodies/nano_buddies/NanoModelScript.py"
@@ -19,10 +19,12 @@ CONST = True
 
 FAILED = ["1YC7_1"]
 
+LONG = ["6QN8_1"]
+
 # the begining of the script for cluster
 INTRO = "#!/bin/tcsh\n" \
         "#SBATCH --mem={}\n" \
-        "#SBATCH -c2\n" \
+        "#SBATCH -c1\n" \
         "#SBATCH --time={}\n" #\
         # "#SBATCH --array=1-3\n"
 
@@ -122,27 +124,31 @@ def rosetta_loops():
 
     :return:
     """
-    time, memory, array = "5-0", "4500m", "3"
+    time, memory, array = "6-0", "4500m", "3"
 
     for pdb_dir in os.listdir(os.getcwd()):
-        if pdb_dir in FAILED:
+        if pdb_dir in FAILED or pdb_dir in LONG:
             continue
             # -detect_disulf false
             # -camelid true
         os.chdir(pdb_dir)
-        script_name = pdb_dir + ".sh"  # script file
+        script_name = pdb_dir + ".sh" if not CONST else pdb_dir + "_nanonet.sh" # script file
         with open(script_name, 'w') as f:
             f.write(INTRO.format(memory, time))
-            f.write("SBATCH --array=1-{}\n".format(array))
+            f.write("#SBATCH --array=1-{}\n".format(array))
             f.write("cd " + os.getcwd() + "\n")
             f.write("setenv ROSETTA /cs/labs/dina/tomer.cohen13/Rosetta\n")
             f.write("setenv ROSETTA3_DB $ROSETTA/main/database\n")
             f.write("setenv ROSETTA_BIN $ROSETTA/main/source/bin\n")
             f.write("setenv PATH $PATH':'$ROSETTA_BIN\n")
             f.write("setenv PATH $PATH':'/cs/labs/dina/tomer.cohen13/Blast/bin\n")
-            if CONT:
-                f.write("antibody_H3.linuxgccrelease @abH3.flags -s grafting/model-0.relaxed.pdb -nstruct 200 -out:file:scorefile H3_NanoNet_modeling_scores.fasc -out:path:pdb H3_NanoNet_modeling > h3_nanonet_modeling-0.log\n")
+            if CONST:
+                if not os.path.isdir("H3_NanoNet_modeling"):
+                    os.mkdir("H3_NanoNet_modeling")
+                f.write("antibody_H3.linuxgccrelease @abH3.flags -s grafting/model-0.relaxed.pdb -nstruct 200 -out:file:scorefile H3_NanoNet_modeling_scores.fasc -out:path:pdb H3_NanoNet_modeling -constraints:cst_file {}_constraints -constraints:cst_weight 1.0 > h3_nanonet_modeling-0.log\n".format(pdb_dir))
             else:
+                if not os.path.isdir("H3_modeling"):
+                    os.mkdir("H3_modeling")
                 f.write("antibody_H3.linuxgccrelease @abH3.flags -s grafting/model-0.relaxed.pdb -nstruct 200 -out:file:scorefile H3_modeling_scores.fasc -out:path:pdb H3_modeling > h3_modeling-0.log\n")
             # for model in range(1,10):
             #     f.write("antibody_H3.linuxgccrelease @abH3.flags -s grafting/model-{}.relaxed.pdb -nstruct 100 > h3_modeling-{}.log\n".format(model, model))
