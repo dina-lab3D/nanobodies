@@ -345,18 +345,8 @@ print (best_model, best_score)
 class MyLoop(loopmodel):
     # This routine picks the residues to be refined by loop modeling
     def select_loop_atoms(self):
-        return selection(self.residue_range(cdr3_start+1, cdr3_end-2), self.residue_range(cdr1_start+1, cdr1_end-2)) # focus  TODO: cdr1 loop modeling
+        return selection(self.residue_range(cdr3_start+1, cdr3_end-2)) # self.residue_range(cdr1_start+1, cdr1_end-2)
 
-    def special_restraints(self, aln):
-
-
-
-        rsr = self.restraints
-        at = self.atoms
-
-        #       Restrain the specified CA-CA distance to 10 angstroms (st. dev.=0.1)
-        #       Use a harmonic potential and X-Y distance group.
-        rsr.add(forms.gaussian(group=physical.xy_distance,feature=features.distance(at['CA:35'],at['CA:40']),mean=10.0, stdev=0.1))
 
 
 
