@@ -27,6 +27,9 @@ INTRO = "#!/bin/tcsh\n" \
         "#SBATCH -c1\n" \
         "#SBATCH --time={}\n" #\
         # "#SBATCH --array=1-3\n"
+f = ["3J42_1", "3LZF_1", "3GBM_2", "2GK0_1", "6MTQ_1", "6DLB_1", "2YK1_1","5VIG_1" ,"2FBJ_1"
+     , "1OL0_1", "4N90_1", "3R1G_1", "5KVD_1", "1R0A_1", "4A6Y_1", "3PP4_1", "5WTG_1", "5MP2_1"
+     , "6NB8_1", "4OLZ_1", "2HWZ_1", "6HKG_1", "1OAX_4"]
 
 
 def model_nanobody():
@@ -91,7 +94,7 @@ def rosetta_model():
 
     :return:
     """
-    time, memory = "6:0:0", "7000m"
+    time, memory = "6:0:0", "6000m"
 
     for pdb_dir in os.listdir(os.getcwd()):
         if pdb_dir not in FAILED:
@@ -108,7 +111,7 @@ def rosetta_model():
             f.write("setenv ROSETTA_BIN $ROSETTA/main/source/bin\n")
             f.write("setenv PATH $PATH':'$ROSETTA_BIN\n")
             f.write("setenv PATH $PATH':'/cs/labs/dina/tomer.cohen13/Blast/bin\n")
-            f.write("antibody.linuxgccrelease -exclude_homologs true -vhh_only -fasta " + pdb_dir + ".fa | tee grafting.log\n")
+            f.write("antibody.linuxgccrelease -exclude_homologs true -vhh_only -antibody:h1_template 5c1m -fasta " + pdb_dir + ".fa | tee grafting.log\n")
             f.write("cd grafting\n")
             f.write("rm -f debug*\n")
             f.write("rm -f orientation*\n")
@@ -124,10 +127,10 @@ def rosetta_loops():
 
     :return:
     """
-    time, memory, array = "6-0", "4500m", "3"
+    time, memory, array = "3-0", "4500m", "3"
 
     for pdb_dir in os.listdir(os.getcwd()):
-        if pdb_dir in FAILED or pdb_dir in LONG:
+        if pdb_dir not in f:
             continue
             # -detect_disulf false
             # -camelid true
