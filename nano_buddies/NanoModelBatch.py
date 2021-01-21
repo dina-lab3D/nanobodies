@@ -15,11 +15,9 @@ RESTRAINTS_PATH = "/cs/labs/dina/tomer.cohen13/nanobodies/nano_buddies/LoopRestr
 # trained nano_net model path
 NANO_NET_MODEL_PATH = "/cs/labs/dina/tomer.cohen13/NN/NanoNetPDBs/NanoNet_model"
 
-CONST = True
+CONST = False
 
 FAILED = ["1YC7_1"]
-
-LONG = ["6QN8_1"]
 
 # the begining of the script for cluster
 INTRO = "#!/bin/tcsh\n" \
@@ -27,9 +25,6 @@ INTRO = "#!/bin/tcsh\n" \
         "#SBATCH -c1\n" \
         "#SBATCH --time={}\n" #\
         # "#SBATCH --array=1-3\n"
-f = ["3J42_1", "3LZF_1", "3GBM_2", "2GK0_1", "6MTQ_1", "6DLB_1", "2YK1_1","5VIG_1" ,"2FBJ_1"
-     , "1OL0_1", "4N90_1", "3R1G_1", "5KVD_1", "1R0A_1", "4A6Y_1", "3PP4_1", "5WTG_1", "5MP2_1"
-     , "6NB8_1", "4OLZ_1", "2HWZ_1", "6HKG_1", "1OAX_4"]
 
 
 def model_nanobody():
@@ -111,14 +106,14 @@ def rosetta_model():
             f.write("setenv ROSETTA_BIN $ROSETTA/main/source/bin\n")
             f.write("setenv PATH $PATH':'$ROSETTA_BIN\n")
             f.write("setenv PATH $PATH':'/cs/labs/dina/tomer.cohen13/Blast/bin\n")
-            f.write("antibody.linuxgccrelease -exclude_homologs true -vhh_only -antibody:h1_template 5c1m -fasta " + pdb_dir + ".fa | tee grafting.log\n")
+            f.write("antibody.linuxgccrelease -exclude_homologs true -vhh_only -fasta " + pdb_dir + ".fa | tee grafting.log\n")
             f.write("cd grafting\n")
             f.write("rm -f debug*\n")
             f.write("rm -f orientation*\n")
             f.write("rm -f frh*.pdb*\n")
             f.write("rm -f frl*\n")
             f.write("rm -f l*\n")
-        subprocess.run("sbatch " + script_name,shell=True)  # sends script to the cluster
+        subprocess.run("sbatch " + script_name, shell=True)  # sends script to the cluster
         os.chdir("..")
 
 
@@ -127,18 +122,18 @@ def rosetta_loops():
 
     :return:
     """
-    time, memory, array = "3-0", "4500m", "3"
+    time, memory, array = "1-0", "4200m", "42"
 
     for pdb_dir in os.listdir(os.getcwd()):
-        if pdb_dir not in f:
+        if pdb_dir != "2HWZ_1":
             continue
             # -detect_disulf false
             # -camelid true
         os.chdir(pdb_dir)
-        script_name = pdb_dir + ".sh" if not CONST else pdb_dir + "_nanonet.sh" # script file
+        script_name = pdb_dir + ".sh" if not CONST else pdb_dir + "_nanonet_2.sh" # script file
         with open(script_name, 'w') as f:
             f.write(INTRO.format(memory, time))
-            f.write("#SBATCH --array=1-{}\n".format(array))
+            # f.write("#SBATCH --array=1-{}\n".format(array))
             f.write("cd " + os.getcwd() + "\n")
             f.write("setenv ROSETTA /cs/labs/dina/tomer.cohen13/Rosetta\n")
             f.write("setenv ROSETTA3_DB $ROSETTA/main/database\n")
@@ -146,12 +141,12 @@ def rosetta_loops():
             f.write("setenv PATH $PATH':'$ROSETTA_BIN\n")
             f.write("setenv PATH $PATH':'/cs/labs/dina/tomer.cohen13/Blast/bin\n")
             if CONST:
-                if not os.path.isdir("H3_NanoNet_modeling"):
-                    os.mkdir("H3_NanoNet_modeling")
+                # if not os.path.isdir("H3_NanoNet_modeling"):
+                #     os.mkdir("H3_NanoNet_modeling")
                 f.write("antibody_H3.linuxgccrelease @abH3.flags -s grafting/model-0.relaxed.pdb -nstruct 200 -out:file:scorefile H3_NanoNet_modeling_scores.fasc -out:path:pdb H3_NanoNet_modeling -constraints:cst_file {}_constraints -constraints:cst_weight 1.0 > h3_nanonet_modeling-0.log\n".format(pdb_dir))
             else:
-                if not os.path.isdir("H3_modeling"):
-                    os.mkdir("H3_modeling")
+                # if not os.path.isdir("H3_modeling"):
+                #     os.mkdir("H3_modeling")
                 f.write("antibody_H3.linuxgccrelease @abH3.flags -s grafting/model-0.relaxed.pdb -nstruct 200 -out:file:scorefile H3_modeling_scores.fasc -out:path:pdb H3_modeling > h3_modeling-0.log\n")
             # for model in range(1,10):
             #     f.write("antibody_H3.linuxgccrelease @abH3.flags -s grafting/model-{}.relaxed.pdb -nstruct 100 > h3_modeling-{}.log\n".format(model, model))
