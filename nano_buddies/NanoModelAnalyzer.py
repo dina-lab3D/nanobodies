@@ -6,24 +6,28 @@ from plotnine import *
 import argparse
 
 # columns names for the data frame (of scores.txt)
-COL = ["type", "name", "dope_score", "soap_score", "rmsd", "cdr1_rmsd", "cdr2_rmsd", "cdr3_rmsd"]
+# COL = ["type", "name", "dope_score", "soap_score", "rmsd", "cdr1_rmsd", "cdr2_rmsd", "cdr3_rmsd"]
 FULL_COL = ["type", "name", "dope_score", "soap_score", "rmsd", "cdr1_rmsd", "cdr2_rmsd", "cdr3_rmsd", "length"]
 
-# columns names for file cdrs_dist
-CDRS_COL = ["-3", "-2", "-1", "0 start", "1", "2", "3", "0 end"]
-
-# path to the directory containing all the lengths of the pdbs
-LENGTH_PATH = "/cs/labs/dina/tomer.cohen13/lengths"
-
-# length file name
-LENGTH_FILE = "nano_length.txt"
+# columns names for the data frame (of H3_modeling_scores_rmsd.csv/H3_NanoNet_modeling_scores_rmsd.csv)
+ROSETTA_COL = ["type", "name", "total_score", "unconstr_score", "score", "rmsd", "cdr1_rmsd", "cdr2_rmsd", "cdr3_rmsd", "length"]
 
 
-SCORES_FILE = "scores.txt"
+# # columns names for file cdrs_dist
+# CDRS_COL = ["-3", "-2", "-1", "0 start", "1", "2", "3", "0 end"]
 
-PLOTS_PATH = "model_plots"
-SUMMERY_FILE = "model_summery"
+# # path to the directory containing all the lengths of the pdbs
+# LENGTH_PATH = "/cs/labs/dina/tomer.cohen13/lengths"
+#
+# # length file name
+# LENGTH_FILE = "nano_length.txt"
+
+
+SCORES_FILE = ""
+PLOTS_PATH = "plots"
+SUMMERY_PATH = "summery"
 NANO_NET = False
+ROSETTA = False
 
 # number of models to take in general
 TOP_SCORES_N = 10
@@ -38,25 +42,25 @@ TOP_MODEL_N = 5
 TOP_NANO_NET_N = 10
 
 
-# Using enum class create enumerations
-class ColInfo(enum.Enum):
-    NAME = 1
-    D_SCORE = 3
-    S_SCORE = 5
-    RMSD = 7
-    LENGTH = 8
-
-
 def get_scores_data(pdb_folder):
     """
     reads the scores.txt from the pdb_folder into df (column names = COL)
     :param pdb_folder: path of the pdb folder
     :return: df (len(COL) columns)
     """
-    return pd.read_csv(os.path.join(pdb_folder, SCORES_FILE), sep=" ", header=None, names=COL, usecols=[0,1,3,5,7,9,11,13])
+    if ROSETTA:
+        return pd.read_csv(os.path.join(pdb_folder, SCORES_FILE))
+    return pd.read_csv(os.path.join(pdb_folder, SCORES_FILE), sep=" ", header=None, names=FULL_COL, usecols=[0,1,3,5,7,9,11,13,15])
 
 
-def generate_rmsd_graph(folder, data, name):
+########################################################################################################################
+#                                                                                                                      #
+#                                                length box plot                                                       #
+#                                                                                                                      #
+########################################################################################################################
+
+
+def boxplot_rmsd_length(folder, data, name):
     """
     saves the box plots of the length against minimal rmsd for all the
     nanobodies in data (box plot for each length)
@@ -74,26 +78,26 @@ def generate_rmsd_graph(folder, data, name):
     plot.save(os.path.join(folder, PLOTS_PATH, "rmsd_boxplot_" + name), dpi=1000)
 
 
-def generate_final_scores(folder_path):
+def get_length_vs_best_rmsd(folder_path):
     """
     returns 2 DataFrames (MODEL, LOOP) each with the minimal rmsd for each
     nanobody and its length
     :param folder_path: pdbs directory path
     :return: 2 DataFrames, size : (number of nanobodies in folder_path) * (len(FULL_COL))
     """
-    models, loops= [], []
+    models, loops= pd.DataFrame(data=[], columns=FULL_COL), pd.DataFrame(data=[], columns=FULL_COL)
     # create a list of the scores from the pdb files, divided into base model and sampled loops
     for file in os.listdir(folder_path):
         pdb_folder = os.path.join(folder_path, file)
         if os.path.isdir(pdb_folder) and os.path.exists(os.path.join(pdb_folder, SCORES_FILE)):
-            model, loop = parse_one_pdb(pdb_folder)
-            if not NANO_NET:
-                models.append(model.tolist()[0])
-            loops.append(loop.tolist()[0])
-    return pd.DataFrame(data=models, columns=FULL_COL), pd.DataFrame(data=loops, columns=FULL_COL)
+            model, loop = get_length_one(pdb_folder)
+            if not NANO_NET and not ROSETTA:
+                models.append(model)
+            loops.append(loop)
+    return models, loops
 
 
-def parse_one_pdb(pdb_folder):
+def get_length_one(pdb_folder):
     """
     returns 2 numpy arrays (MODEL, LOOP) that contains the minimal rmsd of the
     nanobody in the pdb_folder and also the nanobody length (the indexes in the
@@ -106,27 +110,27 @@ def parse_one_pdb(pdb_folder):
     loop_min_idx = df[df['type'] == "LOOP"]["rmsd"].idxmin()
     loop_df = df[loop_min_idx:loop_min_idx + 1]
 
-    if NANO_NET:
+    if NANO_NET or ROSETTA:
         model_df = None
     else:
         model_min_idx = df[df['type'] == "MODEL"]["rmsd"].idxmin()
         model_df = df[model_min_idx:model_min_idx + 1]
 
-    pdb_name = os.path.basename(pdb_folder)
-    pdb_length_path = os.path.join(LENGTH_PATH, pdb_name, LENGTH_FILE)
-    if not os.path.exists(pdb_length_path):  # TODO: add length for all the Antibodies!
-        length = [0]
-        if not NANO_NET:
-            model_df["length"] = length
-        loop_df["length"] = length
-    else:
-        with open(pdb_length_path, 'r') as file:
-            length = [file.readline()]
-            if not NANO_NET:
-                model_df["length"] = length
-            loop_df["length"] = length
+    # pdb_name = os.path.basename(pdb_folder)
+    # pdb_length_path = os.path.join(LENGTH_PATH, pdb_name, LENGTH_FILE)
+    # if not os.path.exists(pdb_length_path):  # TODO: add length for all the Antibodies!
+    #     length = [0]
+    #     if not NANO_NET:
+    #         model_df["length"] = length
+    #     loop_df["length"] = length
+    # else:
+    #     with open(pdb_length_path, 'r') as file:
+    #         length = [file.readline()]
+    #         if not NANO_NET:
+    #             model_df["length"] = length
+    #         loop_df["length"] = length
 
-    return np.array(model_df), np.array(loop_df)
+    return model_df, loop_df
 
 
 def extract_box_graphs(folder_path):
@@ -136,10 +140,17 @@ def extract_box_graphs(folder_path):
     :param folder_path: pdbs directory path
     :return: None
     """
-    models, loops = generate_final_scores(folder_path)
-    if not NANO_NET:
-        generate_rmsd_graph(folder_path, models, "Model")
-    generate_rmsd_graph(folder_path, loops, "Loop")
+    models, loops = get_length_vs_best_rmsd(folder_path)
+    if not NANO_NET and not ROSETTA:
+        boxplot_rmsd_length(folder_path, models, "Model")
+    boxplot_rmsd_length(folder_path, loops, "Loop")
+
+
+########################################################################################################################
+#                                                                                                                      #
+#                                 scatter plot RMSD vs score for each pdb                                              #
+#                                                                                                                      #
+########################################################################################################################
 
 
 def get_min_rmsd_by_score(df, score_name):
@@ -167,7 +178,7 @@ def get_min_rmsd_by_type_score(df, score_name):
     :param score_name: score to use (dope_score/soap_score)
     :return: 2 floats
     """
-    if NANO_NET:
+    if NANO_NET or ROSETTA:
         top_loop_scores = pd.DataFrame.sort_values(df[df["type"] == "LOOP"], by=score_name)[0:TOP_NANO_NET_N]
         min_index = top_loop_scores["rmsd"].idxmin()
     else:
@@ -217,71 +228,31 @@ def plot_points_one_pdb(folder, pdb_folder, score_name):
     plot.save(os.path.join(folder, PLOTS_PATH, pdb_name + "_" + score_name + "_plot"), dpi=1000)
 
 
-def plot_summery_scores(folder, input_file, score):
-
-    df = pd.read_csv(input_file)
-    name = os.path.basename(input_file).split(".")[0]
-
-    left_of_line_best_10_rmsd= len(df[df['RMSD_BEST_10'] < 2]["RMSD_BEST_10"])
-    left_of_line_min_rmsd = len(df[df['MIN_RMSD'] < 2]["MIN_RMSD"])
-
-    # rmsd
-    plot = ggplot(df) + geom_point(aes(x="RMSD_BEST_10", y="SCORE_BEST_10", color="TYPE_BEST_10"), alpha=0.7) + \
-           geom_vline(xintercept=2, linetype='dotted', color="red", show_legend=True) + labs(x="RMSD", y="Soap score")+\
-           ggtitle("RMSD of best score vs " + score.replace("_", " ") + " (left of line=" + str(left_of_line_best_10_rmsd) + ")")
-
-    plot2 = ggplot(df) + geom_point(aes(x="MIN_RMSD", y="SCORE_MIN_RMSD", color="TYPE_MIN_RMSD"), alpha=0.7) + \
-           geom_vline(xintercept=2, linetype='dotted', color="red", show_legend=True) + labs(x="RMSD", y="Soap Score")+\
-            ggtitle("Min RMSD vs " + score.replace("_", " ") + " (left of line=" + str(left_of_line_min_rmsd) + ")")
-
-    plot.save(os.path.join(folder, PLOTS_PATH, name), dpi=1000)
-    plot2.save(os.path.join(folder, PLOTS_PATH, "summery_min_rmsd_" + score), dpi=1000)
-
-    # cdrs
-    for i in ["1","2","3"]:
-
-        left_of_line_best_10_rmsd_cdr= len(df[df['CDR' + i] < 2]["CDR" + i])
-        left_of_line_min_rmsd_cdr = len(df[df['MIN_CDR' + i] < 2]["MIN_CDR" + i])
-
-        plot3 = ggplot(df) + geom_point(aes(x="CDR" + i, y="SCORE_BEST_10", color="TYPE_BEST_10"), alpha=0.7) + \
-               geom_vline(xintercept=2, linetype='dotted', color="red", show_legend=True) + labs(x="RMSD", y="Soap score")+ \
-               ggtitle("CDR" + i + " RMSD of best score vs " + score.replace("_", " ") + " (left of line=" + str(left_of_line_best_10_rmsd_cdr) + ")")
-
-        plot4 = ggplot(df) + geom_point(aes(x="MIN_CDR" + i, y="SCORE_MIN_RMSD", color="TYPE_MIN_RMSD"), alpha=0.7) + \
-            geom_vline(xintercept=2, linetype='dotted', color="red", show_legend=True) + labs(x="RMSD", y="Soap Score")+ \
-            ggtitle("Min CDR" + i + " RMSD vs " + score.replace("_", " ") + " (left of line=" + str(left_of_line_min_rmsd_cdr) + ")")
-        plot3.save(os.path.join(folder, PLOTS_PATH, name + '_cdr' + i), dpi=1000)
-        plot4.save(os.path.join(folder, PLOTS_PATH, "summery_min_rmsd_" + score + "_cdr" + i), dpi=1000)
-
-
-def summery_rmsd_scores(directory, score):
+def plot_rmsd_vs_score(directory, n, score):
     """
-    saves a summery of all the min rmsd of each nanobody in the directory (both min rmsd and min rmsd of top 10 models
-    according to score), save the data in the file directory/summery_rmsd_scores.csv
-    :param directory: path to the pdbs folder
-    :param score: score to use(dope_score,soap_score)
+    plots n graphs for n different nanobodies that have a pdb directory in the
+    "directory" argument, the graphs show the rmsd of the nanobody against its
+    score
+    :param directory: pdbs directory path
+    :param n: number of nanobodies to plot (int)
+    :param score: score to use (dope_score/soap_score)
     :return: None
     """
-    summery_best_10 = os.path.join(directory, SUMMERY_FILE, "summery_10_rmsd_" + score + ".csv")
-    summery_best_5_by_type = os.path.join(directory, SUMMERY_FILE, "summery_" + "m" + str(TOP_MODEL_N) + "_l" + str(TOP_LOOP_N) + "_rmsd_" + score + ".csv")
 
-    with open(summery_best_10, 'w') as output_file_10:
-        with open(summery_best_5_by_type, "w") as output_file_5_5:
-            first_pdb = True
-            for file in os.listdir(directory):
-                pdb_folder = os.path.join(directory, file)
-                if os.path.isdir(pdb_folder) and os.path.exists(os.path.join(pdb_folder, SCORES_FILE)):
-                    one_pdb_rmsd_scores(pdb_folder, score, get_min_rmsd_by_score).to_csv(output_file_10, header=first_pdb, index=False)
-                    one_pdb_rmsd_scores(pdb_folder, score, get_min_rmsd_by_type_score).to_csv(output_file_5_5, header=first_pdb, index=False)
-                    first_pdb = False
+    for file in os.listdir(directory):
+        if n == 0:
+            return
+        pdb_folder = os.path.join(directory, file)
+        if os.path.isdir(pdb_folder) and os.path.exists(os.path.join(pdb_folder, SCORES_FILE)):
+            plot_points_one_pdb(directory, pdb_folder, score)
+            n -= 1
 
-    plot_summery_scores(directory, summery_best_10, score)
-    plot_summery_scores(directory, summery_best_5_by_type, score)
 
-    plot_boxplot_cdrs_rmsd(directory, summery_best_10)
-    plot_boxplot_cdrs_rmsd(directory, summery_best_5_by_type)
-
-    summery_differences(directory, score, summery_best_10, summery_best_5_by_type)
+########################################################################################################################
+#                                                                                                                      #
+#                                summery plots RMSD vs score for all pdbs                                              #
+#                                                                                                                      #
+########################################################################################################################
 
 
 def plot_boxplot_cdrs_rmsd(folder, input_file):
@@ -302,35 +273,44 @@ def plot_boxplot_cdrs_rmsd(folder, input_file):
     plot.save(os.path.join(folder, PLOTS_PATH,name + "_cdrs_rmsd_boxplot"), dpi=1000)
 
 
-def summery_differences(directory, score_name, summery_best_10_path, summery_best_5_by_type_path):
-    """
+def plot_summery_scores(folder, input_file, score):
 
-    :param summery_best_10_path:
-    :param summery_best_5_by_type_path:
-    :param directory
-    :param score_name
-    :return:
-    """
-    df_10 = pd.read_csv(summery_best_10_path)
-    df_5_5 = pd.read_csv(summery_best_5_by_type_path)
+    df = pd.read_csv(input_file)
+    name = os.path.basename(input_file).split(".")[0]
 
-    rmsd_sum1, rmsd_sum2 = df_10["RMSD_BEST_10"].sum(), df_5_5["RMSD_BEST_10"].sum()
-    diff_sum1, diff_sum2 = df_10["DIFF_RMSD"].sum(), df_5_5["DIFF_RMSD"].sum()
-    diff_03_1, diff_03_2 = len(df_10[df_10["DIFF_RMSD"] < 0.3]["DIFF_RMSD"]), len(df_5_5[df_5_5["DIFF_RMSD"] < 0.3]["DIFF_RMSD"])
-    rmsd_under_2_1, rmsd_under_2_2 = len(df_10[df_10["RMSD_BEST_10"] < 2]["RMSD_BEST_10"]), len(df_5_5[df_5_5["RMSD_BEST_10"] < 2]["RMSD_BEST_10"])
-    rmsd_under_15_1, rmsd_under_15_2 = len(df_10[df_10["RMSD_BEST_10"] < 1.5]["RMSD_BEST_10"]), len(df_5_5[df_5_5["RMSD_BEST_10"] < 1.5]["RMSD_BEST_10"])
-    rmsd_under_1_1, rmsd_under_1_2 = len(df_10[df_10["RMSD_BEST_10"] < 1]["RMSD_BEST_10"]), len(df_5_5[df_5_5["RMSD_BEST_10"] < 1]["RMSD_BEST_10"])
-    rmsd_under_05_1, rmsd_under_05_2 = len(df_10[df_10["RMSD_BEST_10"] < 0.5]["RMSD_BEST_10"]), len(df_5_5[df_5_5["RMSD_BEST_10"] < 0.5]["RMSD_BEST_10"])
+    left_of_line_best_10_rmsd= len(df[df['RMSD_BEST_10'] < 2]["RMSD_BEST_10"])
+    left_of_line_min_rmsd = len(df[df['MIN_RMSD'] < 2]["MIN_RMSD"])
 
-    df1 = pd.DataFrame({"type": ["10"], "rmsd_sum": [rmsd_sum1], "diff_sum": [diff_sum1], "diff_num_under_0.3": [diff_03_1], "num_rmsd_under_2": [rmsd_under_2_1],
-                       "num_rmsd_under_1.5": [rmsd_under_15_1], "num_rmsd_under_1": [rmsd_under_1_1], "num_rmsd_under_0.5": [rmsd_under_05_1]})
-    df2 = pd.DataFrame({"type": ["5"], "rmsd_sum": [rmsd_sum2], "diff_sum": [diff_sum2], "diff_num_under_0.3": [diff_03_2], "num_rmsd_under_2": [rmsd_under_2_2],
-                       "num_rmsd_under_1.5": [rmsd_under_15_2], "num_rmsd_under_1": [rmsd_under_1_2], "num_rmsd_under_0.5": [rmsd_under_05_2]})
+    # rmsd
+    plot = ggplot(df) + geom_point(aes(x="RMSD_BEST_10", y="SCORE_BEST_10", color="TYPE_BEST_10"), alpha=0.7) + \
+           geom_vline(xintercept=2, linetype='dotted', color="red", show_legend=True) + labs(x="RMSD", y="Soap score")+ \
+           ggtitle("RMSD of best score vs " + score.replace("_", " ") + " (left of line=" + str(left_of_line_best_10_rmsd) + ")")
 
-    pd.concat([df1, df2]).to_csv(os.path.join(directory, SUMMERY_FILE, "diff_summery_" + score_name + "m" + str(TOP_MODEL_N) + "l" + str(TOP_LOOP_N) + ".csv"), header=True, index=False)
+    plot2 = ggplot(df) + geom_point(aes(x="MIN_RMSD", y="SCORE_MIN_RMSD", color="TYPE_MIN_RMSD"), alpha=0.7) + \
+            geom_vline(xintercept=2, linetype='dotted', color="red", show_legend=True) + labs(x="RMSD", y="Soap Score")+ \
+            ggtitle("Min RMSD vs " + score.replace("_", " ") + " (left of line=" + str(left_of_line_min_rmsd) + ")")
+
+    plot.save(os.path.join(folder, PLOTS_PATH, name), dpi=1000)
+    plot2.save(os.path.join(folder, PLOTS_PATH, "summery_min_rmsd_" + score), dpi=1000)
+
+    # cdrs
+    for i in ["1","2","3"]:
+
+        left_of_line_best_10_rmsd_cdr= len(df[df['CDR' + i] < 2]["CDR" + i])
+        left_of_line_min_rmsd_cdr = len(df[df['MIN_CDR' + i] < 2]["MIN_CDR" + i])
+
+        plot3 = ggplot(df) + geom_point(aes(x="CDR" + i, y="SCORE_BEST_10", color="TYPE_BEST_10"), alpha=0.7) + \
+                geom_vline(xintercept=2, linetype='dotted', color="red", show_legend=True) + labs(x="RMSD", y="Soap score")+ \
+                ggtitle("CDR" + i + " RMSD of best score vs " + score.replace("_", " ") + " (left of line=" + str(left_of_line_best_10_rmsd_cdr) + ")")
+
+        plot4 = ggplot(df) + geom_point(aes(x="MIN_CDR" + i, y="SCORE_MIN_RMSD", color="TYPE_MIN_RMSD"), alpha=0.7) + \
+                geom_vline(xintercept=2, linetype='dotted', color="red", show_legend=True) + labs(x="RMSD", y="Soap Score")+ \
+                ggtitle("Min CDR" + i + " RMSD vs " + score.replace("_", " ") + " (left of line=" + str(left_of_line_min_rmsd_cdr) + ")")
+        plot3.save(os.path.join(folder, PLOTS_PATH, name + '_cdr' + i), dpi=1000)
+        plot4.save(os.path.join(folder, PLOTS_PATH, "summery_min_rmsd_" + score + "_cdr" + i), dpi=1000)
 
 
-def one_pdb_rmsd_scores(pdb_folder, score_name, min_func):
+def get_one_pdb_rmsd_scores(pdb_folder, score_name, min_func):
     """
     returns a df with the summery of one pdb nanobody (min rmsd by the best 10 models according to score_name, min rmsd
     of all models, typs, etc.)
@@ -356,30 +336,129 @@ def one_pdb_rmsd_scores(pdb_folder, score_name, min_func):
     return output
 
 
-def plot_rmsd_vs_score(directory, n, score):
+def summery_rmsd_scores(directory, score):
     """
-    plots n graphs for n different nanobodies that have a pdb directory in the
-    "directory" argument, the graphs show the rmsd of the nanobody against its
-    score
-    :param directory: pdbs directory path
-    :param n: number of nanobodies to plot (int)
-    :param score: score to use (dope_score/soap_score)
+    saves a summery of all the min rmsd of each nanobody in the directory (both min rmsd and min rmsd of top 10 models
+    according to score), save the data in the file directory/summery_rmsd_scores.csv
+    :param directory: path to the pdbs folder
+    :param score: score to use(dope_score,soap_score)
     :return: None
     """
+    summery_best_10 = os.path.join(directory, SUMMERY_PATH, "summery_10_rmsd_" + score + ".csv")
+    summery_best_5_by_type = os.path.join(directory, SUMMERY_PATH, "summery_" + "m" + str(TOP_MODEL_N) + "_l" + str(TOP_LOOP_N) + "_rmsd_" + score + ".csv")
 
-    for file in os.listdir(directory):
-        if n == 0:
-            return
-        pdb_folder = os.path.join(directory, file)
-        if os.path.isdir(pdb_folder) and os.path.exists(os.path.join(pdb_folder, SCORES_FILE)):
-            plot_points_one_pdb(directory, pdb_folder, score)
-            n -= 1
+    with open(summery_best_10, 'w') as output_file_10:
+        with open(summery_best_5_by_type, "w") as output_file_5_5:
+            first_pdb = True
+            for file in os.listdir(directory):
+                pdb_folder = os.path.join(directory, file)
+                if os.path.isdir(pdb_folder) and os.path.exists(os.path.join(pdb_folder, SCORES_FILE)):
+                    get_one_pdb_rmsd_scores(pdb_folder, score, get_min_rmsd_by_score).to_csv(output_file_10, header=first_pdb, index=False)
+                    get_one_pdb_rmsd_scores(pdb_folder, score, get_min_rmsd_by_type_score).to_csv(output_file_5_5, header=first_pdb, index=False)
+                    first_pdb = False
+
+    plot_summery_scores(directory, summery_best_10, score)
+    plot_summery_scores(directory, summery_best_5_by_type, score)
+
+    plot_boxplot_cdrs_rmsd(directory, summery_best_10)
+    plot_boxplot_cdrs_rmsd(directory, summery_best_5_by_type)
+
+    # summery_differences(directory, score, summery_best_10, summery_best_5_by_type)
+
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("directory", help="directory path containing the pdb directories")
+    parser.add_argument("software", help="score to use (rosetta/modeller)")
+    parser.add_argument("-n", "--nano_net", help="use results after restraints witn NanoNet", action="store_true")
+    parser.add_argument("-b", "--boxplot", help="saves box plots", action="store_true")
+    parser.add_argument("-p", "--points", help="saves points plots, gets number of pdbs to plot", type=int)
+    parser.add_argument("-s", "--summery", help="saves sumery plots and creats summry csv", action="store_true")
+
+    args = parser.parse_args()
+    if args.software == "rosetta":
+        ROSETTA = True
+        SUMMERY_PATH += "_rosetta"
+        PLOTS_PATH += "_rosetta"
+        if args.nano_net:
+            NANO_NET = True
+            SCORES_FILE = "H3_modeling_scores.fasc"
+            SUMMERY_PATH += "_nn"
+            PLOTS_PATH += "_nn"
+        else:
+            SCORES_FILE = "H3_NanoNet_modeling_scores.fasc"
+        score = "total_score"
+
+    elif args.software == "modeller":
+        SUMMERY_PATH += "_modeller"
+        PLOTS_PATH += "_modeller"
+        if args.nano_net:
+            NANO_NET = True
+            SCORES_FILE = "network_scores.txt"
+            SUMMERY_PATH += "_nn"
+            PLOTS_PATH += "_nn"
+        else:
+            SCORES_FILE = "scores.txt"
+        score = "soap_score"
+
+    else:
+        raise ValueError
+
+    if not os.path.isdir(os.path.join(args.directory, PLOTS_PATH)):
+        os.mkdir(os.path.join(args.directory, PLOTS_PATH))
+
+    if not os.path.isdir(os.path.join(args.directory, SUMMERY_PATH)):
+        os.mkdir(os.path.join(args.directory, SUMMERY_PATH))
+
+    if args.boxplot:  # if we want to create boxplot
+        extract_box_graphs(args.directory)
+    if args.points:  # if we want to create point plots (rmsd vs score)
+        plot_rmsd_vs_score(args.directory, args.points, score)
+    if args.summery:  # if we want to create point plots (rmsd vs score)
+        summery_rmsd_scores(args.directory, args.score)  # saves summery into csv file
+        # summery_cdr3(args.directory)
+
+
+########################################################################################################################
+#                                                                                                                      #
+#                                                     old                                                              #
+#                                                                                                                      #
+########################################################################################################################
+
+
+def summery_differences(directory, score_name, summery_best_10_path, summery_best_5_by_type_path):
+    """
+
+    :param summery_best_10_path:
+    :param summery_best_5_by_type_path:
+    :param directory
+    :param score_name
+    :return:
+    """
+    df_10 = pd.read_csv(summery_best_10_path)
+    df_5_5 = pd.read_csv(summery_best_5_by_type_path)
+
+    rmsd_sum1, rmsd_sum2 = df_10["RMSD_BEST_10"].sum(), df_5_5["RMSD_BEST_10"].sum()
+    diff_sum1, diff_sum2 = df_10["DIFF_RMSD"].sum(), df_5_5["DIFF_RMSD"].sum()
+    diff_03_1, diff_03_2 = len(df_10[df_10["DIFF_RMSD"] < 0.3]["DIFF_RMSD"]), len(df_5_5[df_5_5["DIFF_RMSD"] < 0.3]["DIFF_RMSD"])
+    rmsd_under_2_1, rmsd_under_2_2 = len(df_10[df_10["RMSD_BEST_10"] < 2]["RMSD_BEST_10"]), len(df_5_5[df_5_5["RMSD_BEST_10"] < 2]["RMSD_BEST_10"])
+    rmsd_under_15_1, rmsd_under_15_2 = len(df_10[df_10["RMSD_BEST_10"] < 1.5]["RMSD_BEST_10"]), len(df_5_5[df_5_5["RMSD_BEST_10"] < 1.5]["RMSD_BEST_10"])
+    rmsd_under_1_1, rmsd_under_1_2 = len(df_10[df_10["RMSD_BEST_10"] < 1]["RMSD_BEST_10"]), len(df_5_5[df_5_5["RMSD_BEST_10"] < 1]["RMSD_BEST_10"])
+    rmsd_under_05_1, rmsd_under_05_2 = len(df_10[df_10["RMSD_BEST_10"] < 0.5]["RMSD_BEST_10"]), len(df_5_5[df_5_5["RMSD_BEST_10"] < 0.5]["RMSD_BEST_10"])
+
+    df1 = pd.DataFrame({"type": ["10"], "rmsd_sum": [rmsd_sum1], "diff_sum": [diff_sum1], "diff_num_under_0.3": [diff_03_1], "num_rmsd_under_2": [rmsd_under_2_1],
+                        "num_rmsd_under_1.5": [rmsd_under_15_1], "num_rmsd_under_1": [rmsd_under_1_1], "num_rmsd_under_0.5": [rmsd_under_05_1]})
+    df2 = pd.DataFrame({"type": ["5"], "rmsd_sum": [rmsd_sum2], "diff_sum": [diff_sum2], "diff_num_under_0.3": [diff_03_2], "num_rmsd_under_2": [rmsd_under_2_2],
+                        "num_rmsd_under_1.5": [rmsd_under_15_2], "num_rmsd_under_1": [rmsd_under_1_2], "num_rmsd_under_0.5": [rmsd_under_05_2]})
+
+    pd.concat([df1, df2]).to_csv(os.path.join(directory, SUMMERY_PATH, "diff_summery_" + score_name + "m" + str(TOP_MODEL_N) + "l" + str(TOP_LOOP_N) + ".csv"), header=True, index=False)
 
 
 def summery_cdr3(directory):
 
-    mean_file_name = os.path.join(directory, SUMMERY_FILE, "cdr3_mean.csv")
-    all_file_name = os.path.join(directory, SUMMERY_FILE, "cdr3_all.csv")
+    mean_file_name = os.path.join(directory, SUMMERY_PATH, "cdr3_mean.csv")
+    all_file_name = os.path.join(directory, SUMMERY_PATH, "cdr3_all.csv")
     with open(mean_file_name, 'w') as mean_file:
         with open(all_file_name, "w") as all_file:
             first_pdb = True
@@ -397,29 +476,3 @@ def summery_cdr3(directory):
     plot = ggplot(pd.melt(pd.read_csv(mean_file_name), id_vars=['0'], value_vars=CDRS_COL), aes(x="factor(variable)", y="value")) + geom_boxplot(color="black") + \
            geom_jitter(alpha=0.3, color="black", size=0.2) + ggtitle("CDR3 frame vs distance from ref") + labs(x="cdr3 frame", y="distance from ref (Angstram)")
     plot.save(os.path.join(args.directory, PLOTS_PATH, "cdr3_frames_boxplot"), dpi=1000)
-
-
-if __name__ == '__main__':
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("directory", help="directory path containing the pdb directories")
-    parser.add_argument("score", help="score to use (dope_score/soap_score)")
-    parser.add_argument("-b", "--boxplot", help="saves box plots", action="store_true")
-    parser.add_argument("-p", "--points", help="saves points plots, gets number of pdbs to plot", type=int)
-    parser.add_argument("-s", "--summery", help="saves sumery plots and creats summry csv", action="store_true")
-
-    args = parser.parse_args()
-    if not os.path.isdir(os.path.join(args.directory, PLOTS_PATH)):
-        os.mkdir(os.path.join(args.directory, PLOTS_PATH))
-
-    if args.boxplot:  # if we want to create boxplot
-        extract_box_graphs(args.directory)
-    if args.points:  # if we want to create point plots (rmsd vs score)
-        plot_rmsd_vs_score(args.directory, args.points, args.score)
-    if args.summery:  # if we want to create point plots (rmsd vs score)
-        if not os.path.isdir(os.path.join(args.directory, SUMMERY_FILE)):
-            os.mkdir(os.path.join(args.directory, SUMMERY_FILE))
-        summery_rmsd_scores(args.directory, args.score)  # saves summery into csv file
-        # summery_cdr3(args.directory)
-
-
