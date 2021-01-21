@@ -193,7 +193,7 @@ if __name__ == '__main__':
 
         print ("LOOP ", code, " dope-score: ", dope_score, " soap-score: ", soap_score, " rmsd: ", rmsd, " cdr1-rmsd: ", cdr1_rmsd, " cdr2-rmsd: ", cdr2_rmsd, " cdr3-rmsd: ", cdr3_rmsd)
         f.write("LOOP "+ code + " dope-score: " + str(dope_score) + " soap-score: " + str(soap_score) + " rmsd: " + str(rmsd) +
-                " cdr1-rmsd: " + str(cdr1_rmsd) + " cdr2-rmsd: " + str(cdr2_rmsd) + " cdr3-rmsd: " + str(cdr3_rmsd) + "\n")
+                " cdr1-rmsd: " + str(cdr1_rmsd) + " cdr2-rmsd: " + str(cdr2_rmsd) + " cdr3-rmsd: " + str(cdr3_rmsd) + " length: " + str(cdr3_end-cdr3_start) + "\n")
 
         file_to_remove = "NANO.DL%04d0001" % i
         os.remove(file_to_remove)
