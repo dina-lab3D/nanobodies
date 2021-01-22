@@ -50,10 +50,10 @@ def adjust_lengths(ref_seq, model_seq, pdb_dir):
 
                 MATCH_SUB.append(pdb_dir)
             else:
-                i = 0
+                i = len(model_seq)
                 while not match:
-                    i += 1
-                    match = re.search(model_seq[i:], ref_seq)
+                    i -= 1
+                    match = re.search(model_seq[:i], ref_seq)
                     if i == "50":
                         print(pdb_dir)
                         exit(1)
@@ -62,10 +62,9 @@ def adjust_lengths(ref_seq, model_seq, pdb_dir):
                 subprocess.run(get_frag_chain + " ref_renumber.pdb H " + str(start+1) + " " + str(end) + " > temp.pdb", shell=True, stdout=subprocess.DEVNULL)
                 subprocess.run(renumber + " temp.pdb > ref_same_size.pdb", shell=True, stdout=subprocess.DEVNULL)
                 os.remove("temp.pdb")
-                indexes = (i, len(model_seq))
-
+                indexes = (0, i)
                 MATCH_CUT.append(pdb_dir)
-                SEQS.append([ref_seq[start:end], model_seq[i:]])
+                SEQS.append([ref_seq[start:end], model_seq[0:i]])
 
     os.remove("ref_renumber.pdb")
     return indexes
@@ -75,7 +74,7 @@ def calc_rmsds(pdb_dir, nano_net):
 
     os.chdir(pdb_dir)
 
-    model = PDBParser().get_structure("H3_modeling/model-0.relaxed_0001.pdb", "H3_modeling/model-0.relaxed_0001.pdb")[0]["H"]
+    model = PDBParser().get_structure("H3_NanoNet_modeling/model-0.relaxed_0001.pdb", "H3_NanoNet_modeling/model-0.relaxed_0001.pdb")[0]["H"]
     model_seq, _ = get_seq(model)
 
     ref_model = PDBParser().get_structure("ref.pdb", "ref.pdb")[0]["H"]
@@ -159,7 +158,11 @@ def calc_rmsds(pdb_dir, nano_net):
 
     rosetta_scores = pd.read_csv(score_file, skiprows=1, delim_whitespace=True)
     rosetta_scores.drop_duplicates(subset="description", keep="last", inplace=True) # when running rosetta in parallel it can cause several models with same name
-
+    # a = np.array(rosetta_scores["description"])
+    # for i in range(1, N_LOOPS+1):  # change to range(1, (loop_model_num*2)+1) for loop modeling 2
+    #     code = "model-0.relaxed_%04d" % i
+    #     if code not in a:
+    #         print(code)
     rosetta_scores["rmsd"] = all_rmsds
     rosetta_scores["cdr1_rmsd"] = cdr1_rmsds
     rosetta_scores["cdr2_rmsd"] = cdr2_rmsds
@@ -183,27 +186,27 @@ if __name__ == '__main__':
     os.chdir(args.pdbs)
     for pdb in os.listdir(os.getcwd()):
 
-        # if pdb != "2HWZ_1":
-        #     continue
-        os.chdir(pdb)
-        subprocess.run("rm -f ref_cdr*", shell=True)
-        subprocess.run("rm -f H3_modeling_scores_rmsd.csv", shell=True)
-        subprocess.run("rm -f ref_same_size.pdb", shell=True)
-        subprocess.run("rm -f model_renumber.pdb", shell=True)
-        subprocess.run("rm -f temp.pdb", shell=True)
-        subprocess.run("rm -f temp_cdr1.pdb", shell=True)
-        subprocess.run("rm -f temp_cdr2.pdb", shell=True)
-        subprocess.run("rm -f temp_cdr3.pdb", shell=True)
-
-        os.chdir("..")
-        # if os.path.exists(os.path.join(pdb, "H3_modeling_scores.fasc")):
-        #     print(pdb)
-        #     calc_rmsds(pdb, args.nano_net)
-        #     print("{} ended successfully".format(pdb))
-        # else:
-        #     print("{} Failed, no score file".format(pdb))
-        # print("NUM: " + str(k))
-        # k += 1
+        if pdb != "2FL5_1":
+            continue
+        # os.chdir(pdb)
+        # subprocess.run("rm -f ref_cdr*", shell=True)
+        # subprocess.run("rm -f H3_modeling_scores_rmsd.csv", shell=True)
+        # subprocess.run("rm -f ref_same_size.pdb", shell=True)
+        # subprocess.run("rm -f model_renumber.pdb", shell=True)
+        # subprocess.run("rm -f temp.pdb", shell=True)
+        # subprocess.run("rm -f temp_cdr1.pdb", shell=True)
+        # subprocess.run("rm -f temp_cdr2.pdb", shell=True)
+        # subprocess.run("rm -f temp_cdr3.pdb", shell=True)
+        #
+        # os.chdir("..")
+        if os.path.exists(os.path.join(pdb, "H3_modeling_scores.fasc")):
+            print(pdb)
+            calc_rmsds(pdb, args.nano_net)
+            print("{} ended successfully".format(pdb))
+        else:
+            print("{} Failed, no score file".format(pdb))
+        print("NUM: " + str(k))
+        k += 1
 
     print(MATCH_FULL)
     print(MATCH_SUB)

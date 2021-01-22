@@ -8,6 +8,33 @@ import pickle
 if __name__ == '__main__':
 
 
+
+    dir = "/cs/usr/tomer.cohen13/lab/NN/RosettaFasta"
+    # flags_path = "/cs/labs/dina/tomer.cohen13/NN/abH3.flags"
+    os.chdir(dir)
+    for pdb in os.listdir(os.getcwd()):
+
+        os.chdir(pdb)
+        subprocess.run("rm -f slurm-*", shell=True)
+        subprocess.run("rm -f *.sh", shell=True)
+        os.chdir("..")
+        continue
+
+        if pdb == "1YC7_1" or pdb == "summery_rosetta_nn" or pdb == "plots_rosetta_nn":
+            continue
+        os.chdir(pdb)
+        for i in range(1, 201):
+            folder = "H3_modeling"
+            code = "model-0.relaxed_%04d.pdb" % i
+            model_path = os.path.join(folder, code)
+            if not os.path.exists(model_path):
+                print("failed!!!!!")
+                print(pdb)
+                print(i)
+        print(pdb)
+        os.chdir("..")
+    exit(0)
+
     # dir = "/cs/usr/tomer.cohen13/lab/NN/TestPDBs_backup"
     # os.chdir(dir)
     # if not os.path.exists("/cs/usr/tomer.cohen13/lab/NN/RosettaFasta"):

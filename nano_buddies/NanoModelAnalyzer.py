@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 import enum
-from plotnine import *
+# from plotnine import *
 import argparse
 
 # columns names for the data frame (of scores.txt)
@@ -30,7 +30,7 @@ NANO_NET = False
 ROSETTA = False
 
 # number of models to take in general
-TOP_SCORES_N = 10
+TOP_SCORES_N = 1
 
 # number of models to take from loops
 TOP_LOOP_N = 5
@@ -39,7 +39,7 @@ TOP_LOOP_N = 5
 TOP_MODEL_N = 5
 
 # number of models to take from nano_net loops
-TOP_NANO_NET_N = 10
+TOP_NANO_NET_N = 1
 
 
 def get_scores_data(pdb_folder):
@@ -264,7 +264,6 @@ def plot_boxplot_cdrs_rmsd(folder, input_file):
     :return:
     """
     df = pd.read_csv(input_file, usecols=[2,3,4,5]).rename(columns={"RMSD_BEST_10": "ALL"}).melt(value_vars=["ALL","CDR1","CDR2","CDR3"])
-    print(df)
     name = os.path.basename(input_file).split(".")[0]
 
     plot = ggplot(df, aes(x="factor(variable)", y="value")) + geom_boxplot(color="black") + \
@@ -357,11 +356,11 @@ def summery_rmsd_scores(directory, score):
                     get_one_pdb_rmsd_scores(pdb_folder, score, get_min_rmsd_by_type_score).to_csv(output_file_5_5, header=first_pdb, index=False)
                     first_pdb = False
 
-    plot_summery_scores(directory, summery_best_10, score)
-    plot_summery_scores(directory, summery_best_5_by_type, score)
-
-    plot_boxplot_cdrs_rmsd(directory, summery_best_10)
-    plot_boxplot_cdrs_rmsd(directory, summery_best_5_by_type)
+    # plot_summery_scores(directory, summery_best_10, score)
+    # plot_summery_scores(directory, summery_best_5_by_type, score)
+    #
+    # plot_boxplot_cdrs_rmsd(directory, summery_best_10)
+    # plot_boxplot_cdrs_rmsd(directory, summery_best_5_by_type)
 
     # summery_differences(directory, score, summery_best_10, summery_best_5_by_type)
 
@@ -383,11 +382,11 @@ if __name__ == '__main__':
         PLOTS_PATH += "_rosetta"
         if args.nano_net:
             NANO_NET = True
-            SCORES_FILE = "H3_modeling_scores.fasc"
+            SCORES_FILE = "H3_NanoNet_modeling_scores_rmsd.csv"
             SUMMERY_PATH += "_nn"
             PLOTS_PATH += "_nn"
         else:
-            SCORES_FILE = "H3_NanoNet_modeling_scores.fasc"
+            SCORES_FILE = "H3_modeling_scores_rmsd.csv"
         score = "total_score"
 
     elif args.software == "modeller":
@@ -416,7 +415,7 @@ if __name__ == '__main__':
     if args.points:  # if we want to create point plots (rmsd vs score)
         plot_rmsd_vs_score(args.directory, args.points, score)
     if args.summery:  # if we want to create point plots (rmsd vs score)
-        summery_rmsd_scores(args.directory, args.score)  # saves summery into csv file
+        summery_rmsd_scores(args.directory, score)  # saves summery into csv file
         # summery_cdr3(args.directory)
 
 

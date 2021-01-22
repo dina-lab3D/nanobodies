@@ -13,7 +13,6 @@ AA_DICT = {"A": 0, "C": 1, "D": 2, "E": 3, "F": 4, "G": 5, "H": 6, "I": 7, "K": 
            "Q": 13, "R": 14, "S": 15, "T": 16, "W": 17, "Y": 18, "V": 19, "-": 20, "X": 20}
 
 
-
 def get_sequence(fasta_filename):
     for seq_record in SeqIO.parse(fasta_filename, "fasta"):
         sequence = str(seq_record.seq)
@@ -234,7 +233,7 @@ def get_omega(pep_residues, start, end, pad=0):
     return np.dstack([cos_omega, sin_omega])
 
 
-def generate_label(fasta, pdb):
+def generate_label(fasta, pdb, cdr=3):
     """
 
     :param fasta:
@@ -251,16 +250,18 @@ def generate_label(fasta, pdb):
         print(seq_test)
         exit(1)
 
-    [cdr3_start, cdr3_end] = find_cdr3(seq)
+    find = [find_cdr1, find_cdr2, find_cdr3]
+
+    [cdr_start, cdr_end] = find[cdr-1](seq)
 
     # for padding the result matrix with zeros
-    pad = (CDR_MAX_LENGTH - (cdr3_end+1 - cdr3_start)) // 2
+    pad = (CDR_MAX_LENGTH - (cdr_end+1 - cdr_start)) // 2
 
     # get angles and distance
-    theta = get_theta(aa_residues, cdr3_start, cdr3_end, pad)
-    dist = get_dist(aa_residues, cdr3_start, cdr3_end, pad)
-    phi= get_phi(aa_residues, cdr3_start, cdr3_end, pad)
-    omega = get_omega(aa_residues, cdr3_start, cdr3_end, pad)
+    theta = get_theta(aa_residues, cdr_start, cdr_end, pad)
+    dist = get_dist(aa_residues, cdr_start, cdr_end, pad)
+    phi= get_phi(aa_residues, cdr_start, cdr_end, pad)
+    omega = get_omega(aa_residues, cdr_start, cdr_end, pad)
 
     if "X" in seq:
         print("Warning, PDB: {}, has unknown aa".format(fasta))

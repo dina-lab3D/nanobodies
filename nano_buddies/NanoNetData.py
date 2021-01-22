@@ -7,6 +7,7 @@ from tqdm import tqdm
 import re
 from NanoNetUtils import generate_label, generate_input, valid_pdb
 
+CDR = 2
 
 if __name__ == '__main__':
     """
@@ -23,24 +24,25 @@ if __name__ == '__main__':
         if os.path.isdir(directory) and re.fullmatch('[0-9]+', directory):  # directories 1,2,3,4...
             os.chdir(directory)
             print(directory)
-            for pdb in tqdm(os.listdir(os.getcwd())):
+            for pdb in (os.listdir(os.getcwd())):
                 if os.path.isdir(pdb):
                     os.chdir(pdb)
+                    # print(pdb)
                     if not valid_pdb("ref.pdb"):
                         print(directory + ": " + pdb + ", FAILED")
                         failed_pdbs = failed_pdbs.append(pd.DataFrame({"PDB":[pdb], "FOLDER":[directory]}))
                         os.chdir("..")
                         continue
                     feature_matrix.append(generate_label(pdb + ".fa", "ref.pdb"))
-                    input_matrix.append(generate_input(pdb+ ".fa"))
+                    input_matrix.append(generate_input(pdb+ ".fa", CDR))
                     pdb_names.append(os.path.join(directory,pdb))
                     os.chdir("..")
             os.chdir("..")
     feature_matrix = np.stack(feature_matrix, axis=0)
     input_matrix = np.stack(input_matrix, axis=0)
-    labels_file_name = "nn_labels"
-    input_file_name = "nn_input"
-    pdb_names_file = "pdb_names"
+    labels_file_name = "nn_labels_{}".format(CDR)
+    input_file_name = "nn_input_{}".format(CDR)
+    pdb_names_file = "pdb_names_{}".format(CDR)
     # if TEST:
     #     labels_file_name += "_test"
     #     pdb_names_file += "_test"
@@ -52,7 +54,7 @@ if __name__ == '__main__':
     print("Number of valid samples: {}".format(len(pdb_names)))
     print("Total number of faild samples: {}".format(len(failed_pdbs["PDB"])))
     
-    pickle.dump(feature_matrix, open(labels_file_name + ".pkl", "wb"))
-    pickle.dump(input_matrix, open(input_file_name + ".pkl", "wb"))
-    pickle.dump(np.array(pdb_names), open(pdb_names_file + ".pkl", "wb"))
-    failed_pdbs.to_csv("nn_failed_pdbs.csv")
+    # pickle.dump(feature_matrix, open(labels_file_name + ".pkl", "wb"))
+    # pickle.dump(input_matrix, open(input_file_name + ".pkl", "wb"))
+    # pickle.dump(np.array(pdb_names), open(pdb_names_file + ".pkl", "wb"))
+    # failed_pdbs.to_csv("nn_failed_pdbs.csv")

@@ -19,28 +19,32 @@ tf.keras.utils.get_custom_objects().update({'swish': layers.Activation(swish)})
 # idea - add resnets in the end?
 # idea - calculate tanh of omega after combining with transpose (same for dist?)
 
-DIM = 2
-RESNET_BLOCKS = 3
-RESNET_SIZE = (17, 17)
-FIRST_RESNET_SIZE = (17, 17)
-DIALETED_RESNET_BLOCKS = 5
-DIALETION = [1,2,4,8,16]
-DIALETED_RESNET_SIZE = (5, 5)
-EPOCHS = 200
-LR = 0.0005
+
+CDR_DICT = {3:1, 1:0, 2:2}
+DIM = 1  # normal is 3
+CDR = 2  # normal is 3
+KERNELS = 16  # normal is 32
+RESNET_BLOCKS = 5  # normal is 3
+RESNET_SIZE = (9, 9)  # normal is (17,17)
+FIRST_RESNET_SIZE = (9, 9)  # normal is (17,17)
+DIALETED_RESNET_BLOCKS = 10  # normal is 5
+DIALETION = [1,2,4,8,16]  # normal is [1,2,4,8,16]
+DIALETED_RESNET_SIZE = (3, 3)  # normal is (5,5)
+EPOCHS = 150  # normal is 150
+LR = 0.0005  # normal is 0.0005
 TEST_SIZE = 50/2185  # 50 nano-bodies
-VAL_SIZE = 0.055  # 150 nano-bodies
-BATCH = 32
-DROPOUT = 0.2
+VAL_SIZE = 0.075  # 150 nano-bodies (0.075)
+BATCH = 32  # normal is 32
+DROPOUT = 0.2  # normal is 0.2
 END_CONV_SIZE = 4   # normal is 4
-END_CONV_KER = (5, 5)  # normal is 5
-DIALETED_RESNET_KERNELS = 64
-ACTIVATION = "relu"
-END_ACTIVATION = "elu"
+END_CONV_KER = (3, 3)  # normal is (5,5)
+DIALETED_RESNET_KERNELS = 64  # normal is 64
+ACTIVATION = "relu"  # normal relu
+END_ACTIVATION = "elu"  # normal elu
 LOSS = "mse"
 BINS = False
 POOL = False
-files_name = "z_final_6"
+files_name = "DIM_2_3"
 
 
 class PolynomialDecay:
@@ -76,9 +80,10 @@ class StepDecay:
 
 
 def reshape_y(y):
-    if BINS:
-        return [y[:,0,:,:], y[:,1,:,:], y[:,2,:,:], y[:,3,:,:]]
-    return [y[:,0,:,:,0].reshape(-1,32,32,1), y[:,1,:,:,:], y[:,2,:,:,:], y[:,3,:,:,:]]
+    if CDR == 3:
+        return [y[:,0,:,:,0].reshape(-1,32,32,1), y[:,1,:,:,:], y[:,2,:,:,:], y[:,3,:,:,:]]
+    else:
+        return [y[:, 0, 8:24, 8:24, 0].reshape(-1, 16, 16, 1), y[:, 1, 8:24, 8:24, :],y[:, 2, 8:24, 8:24, :], y[:, 3, 8:24, 8:24, :]]
 
 
 def d2_net_architecture():
@@ -86,12 +91,14 @@ def d2_net_architecture():
 
     :return:
     """
-    if DIM == 1:
+    if DIM == 1 and CDR ==3:
         input_layer = tf.keras.Input(shape=(32, 21, 1), name="InputLayer")
+    elif DIM == 1 and CDR != 3:
+        input_layer = tf.keras.Input(shape=(16, 21, 1), name="InputLayer")
     else:
         input_layer = tf.keras.Input(shape=(32, 21, 3), name="InputLayer")
 
-    loop_layer = layers.Conv2D(32, FIRST_RESNET_SIZE, padding='same')(input_layer)
+    loop_layer = layers.Conv2D(KERNELS, FIRST_RESNET_SIZE, padding='same')(input_layer)
 
     # first res block: 2d_conv -> relu -> 2d_conv -> batch_normalization -> add -> relu
     for i in range(RESNET_BLOCKS):
@@ -99,8 +106,8 @@ def d2_net_architecture():
         #     conv_layer = layers.Conv2D(32, RESNET_SIZE, activation=ACTIVATION,padding='same', dilation_rate=loop)(loop_layer)
         #     conv_layer = layers.Conv2D(32, RESNET_SIZE, padding='same',dilation_rate=loop)(conv_layer)
 
-            conv_layer = layers.Conv2D(32, RESNET_SIZE, activation=ACTIVATION, padding='same')(loop_layer)
-            conv_layer = layers.Conv2D(32, RESNET_SIZE, padding='same')(conv_layer)
+            conv_layer = layers.Conv2D(KERNELS, RESNET_SIZE, activation=ACTIVATION, padding='same')(loop_layer)
+            conv_layer = layers.Conv2D(KERNELS, RESNET_SIZE, padding='same')(conv_layer)
             batch_layer = layers.BatchNormalization()(conv_layer)
             loop_layer = layers.Add()([batch_layer, loop_layer])
             loop_layer = layers.Activation(ACTIVATION)(loop_layer)
@@ -108,9 +115,11 @@ def d2_net_architecture():
     premut_layer = layers.Permute((1,3,2))(loop_layer)
 
     # for 32*32*64 matrix
-    conv_layer = layers.Conv2D(32, (5,5), activation=ACTIVATION, padding='same', name='Conv2D_6')(premut_layer)
+    conv_layer = layers.Conv2D(KERNELS, (5,5), activation=ACTIVATION, padding='same')(premut_layer)
     conv_layer_t = layers.Permute((2,1,3))(conv_layer)
     loop_layer = layers.Concatenate()([conv_layer, conv_layer_t])
+    if CDR != 3:
+        loop_layer = layers.Conv2D(64, (5,5), activation=ACTIVATION, padding='same')(loop_layer)
 
     # second res block: dilated_2d_conv -> relu -> dilated_2d_conv -> batch_normalization -> add -> relu
     for block in range(DIALETED_RESNET_BLOCKS):
@@ -208,6 +217,7 @@ def print_parameters():
     print("Name: " + files_name)
     print("parameters summery:")
     print("DIM:" + str(DIM))
+    print("CDR:" + str(CDR))
     print("RESNET_BLOCKS:" + str(RESNET_BLOCKS))
     print("RESNET_SIZE:" + str(RESNET_SIZE))
     print("FIRST_RESNET_SIZE: " + str(FIRST_RESNET_SIZE))
@@ -238,9 +248,10 @@ def angle(angle1, angle2):
 def calc_angle_std(trained_model, x, y):
     y_pred = trained_model.predict(x)
 
-    omega_diff = np.arctan2(y[1][:,:,:,1], y[1][:,:,:,0]) - np.arctan2(y_pred[1][:,:,:,1], y_pred[1][:,:,:,0])
-    theta_diff = np.arctan2(y[2][:,:,:,1], y[2][:,:,:,0]) - np.arctan2(y_pred[2][:,:,:,1], y_pred[2][:,:,:,0])
-    phi_diff = np.arctan2(y[3][:,:,:,1], y[3][:,:,:,0]) - np.arctan2(y_pred[3][:,:,:,1], y_pred[3][:,:,:,0])
+    cor = 0.000001
+    omega_diff = np.arctan2(y[1][:,:,:,1] + cor, y[1][:,:,:,0]+ cor) - np.arctan2(y_pred[1][:,:,:,1]+ cor, y_pred[1][:,:,:,0]+ cor)
+    theta_diff = np.arctan2(y[2][:,:,:,1]+ cor, y[2][:,:,:,0]+ cor) - np.arctan2(y_pred[2][:,:,:,1]+ cor, y_pred[2][:,:,:,0]+ cor)
+    phi_diff = np.arctan2(y[3][:,:,:,1]+ cor, y[3][:,:,:,0]+ cor) - np.arctan2(y_pred[3][:,:,:,1]+ cor, y_pred[3][:,:,:,0]+ cor)
 
     omega_diff = ((omega_diff + np.pi) % (2*np.pi) - np.pi)**2
     theta_diff = ((theta_diff + np.pi) % (2*np.pi) - np.pi)**2
@@ -272,7 +283,10 @@ if __name__ == '__main__':
         pdb_names = pickle.load(names_file)
 
     if DIM == 1:
-        X = X[:,:,:,0].reshape(-1,32,21,1)
+        if CDR == 3:
+            X = X[:, :, :, CDR_DICT[CDR]].reshape(-1, 32, 21, 1)
+        else:
+            X = X[:,8:24,:,CDR_DICT[CDR]].reshape(-1,16,21,1)
 
     train_index, test_index, _, _ = train_test_split(np.arange(len(X)), np.arange(len(Y)), test_size=TEST_SIZE)
     X_train, X_test, Y_train, Y_test = np.array(X[train_index,:,:,:]), np.array(X[test_index,:,:,:]), np.array(Y[train_index,:,:,:,:]), np.array(Y[test_index,:,:,:,:])
