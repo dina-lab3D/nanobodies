@@ -2,6 +2,7 @@
 import sys
 import os
 import subprocess
+import re
 
 # 'loop_restraints'/'model_nanobody'/'rosetta_model'/'rosetta_loops'
 MODE = 'rosetta_loops'
@@ -15,11 +16,13 @@ RESTRAINTS_PATH = "/cs/labs/dina/tomer.cohen13/nanobodies/nano_buddies/LoopRestr
 # trained nano_net model path
 NANO_NET_MODEL_PATH = "/cs/labs/dina/tomer.cohen13/NN/NanoNetPDBs/NanoNet_model"
 
-CONST = False
+CONST = True
+DIHEDRAL_WEIGHT = 0.25
+ANGLE_WEIGHT = 1
+DISTANCE_WEIGHT = 1
 
 FAILED = ["1YC7_1"]
-
-FAILEDS = ["5WTG_1", "5MP2_1", "6NB8_1"]
+IMPROVE = ["5MP2_1", "2YK1_1", "1OL0_1", "2EH7_1", "5N4G_1", "6NB8_1", "2FAT_1", "6IEB_1"]
 
 
 # the begining of the script for cluster
@@ -109,7 +112,7 @@ def rosetta_model():
             f.write("setenv ROSETTA_BIN $ROSETTA/main/source/bin\n")
             f.write("setenv PATH $PATH':'$ROSETTA_BIN\n")
             f.write("setenv PATH $PATH':'/cs/labs/dina/tomer.cohen13/Blast/bin\n")
-            f.write("antibody.linuxgccrelease -exclude_homologs true -vhh_only -fasta " + pdb_dir + ".fa | tee grafting.log\n")
+            f.write("antibody.linuxgccrelease -exclude_homologs true -vhh_only -antibody:json_cdr cdrs.json -fasta " + pdb_dir + ".fa | tee grafting.log\n")
             f.write("cd grafting\n")
             f.write("rm -f debug*\n")
             f.write("rm -f orientation*\n")
@@ -125,10 +128,10 @@ def rosetta_loops():
 
     :return:
     """
-    time, memory, array = "1-0", "4200m", "50"
+    time, memory, array = "5-0", "4000m", "3"
 
     for pdb_dir in os.listdir(os.getcwd()):
-        if pdb_dir != "6QN8_1":
+        if not re.fullmatch("[a-zA-Z0-9]{4}_[0-9]", pdb_dir) :
             continue
             # -detect_disulf false
             # -camelid true
@@ -136,7 +139,7 @@ def rosetta_loops():
         script_name = pdb_dir + ".sh" if not CONST else pdb_dir + "_nanonet.sh" # script file
         with open(script_name, 'w') as f:
             f.write(INTRO.format(memory, time))
-            # f.write("#SBATCH --array=1-{}\n".format(array))
+            f.write("#SBATCH --array=1-{}\n".format(array))
             f.write("cd " + os.getcwd() + "\n")
             f.write("setenv ROSETTA /cs/labs/dina/tomer.cohen13/Rosetta\n")
             f.write("setenv ROSETTA3_DB $ROSETTA/main/database\n")
@@ -144,9 +147,11 @@ def rosetta_loops():
             f.write("setenv PATH $PATH':'$ROSETTA_BIN\n")
             f.write("setenv PATH $PATH':'/cs/labs/dina/tomer.cohen13/Blast/bin\n")
             if CONST:
-                if not os.path.isdir("H3_NanoNet_modeling"):
-                    os.mkdir("H3_NanoNet_modeling")
-                f.write("antibody_H3.linuxgccrelease @abH3.flags -s grafting/model-0.relaxed.pdb -nstruct 200 -out:file:scorefile H3_NanoNet_modeling_scores.fasc -out:path:pdb H3_NanoNet_modeling -constraints:cst_file {}_constraints -constraints:cst_weight 1.0 > h3_nanonet_modeling-0.log\n".format(pdb_dir))
+                if not os.path.isdir("H3_NanoNet_modeling_no_omega"):
+                    os.mkdir("H3_NanoNet_modeling_no_omega")
+                f.write("antibody_H3.linuxgccrelease @abH3.flags -s grafting/model-0.relaxed.pdb -nstruct 200 -out:file:scorefile H3_NanoNet_modeling_scores_no_omega.fasc -out:path:pdb H3_NanoNet_modeling_no_omega "
+                        "-constraints:cst_file {}_constraints -constraints:cst_weight 1.0 > h3_nanonet_modeling_no_omega-0.log\n".format(pdb_dir))
+                # -score:set_weights atom_pair_constraint {} angle_constraint {} dihedral_constraint {}
             else:
                 if not os.path.isdir("H3_modeling"):
                     os.mkdir("H3_modeling")
