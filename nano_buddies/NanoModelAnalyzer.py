@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 import enum
-# from plotnine import *
+from plotnine import *
 import argparse
 
 # columns names for the data frame (of scores.txt)
@@ -28,6 +28,7 @@ PLOTS_PATH = "plots"
 SUMMERY_PATH = "summery"
 NANO_NET = False
 ROSETTA = False
+IMPROVE = True
 
 # number of models to take in general
 TOP_SCORES_N = 1
@@ -92,8 +93,8 @@ def get_length_vs_best_rmsd(folder_path):
         if os.path.isdir(pdb_folder) and os.path.exists(os.path.join(pdb_folder, SCORES_FILE)):
             model, loop = get_length_one(pdb_folder)
             if not NANO_NET and not ROSETTA:
-                models.append(model)
-            loops.append(loop)
+                models = models.append(model)
+            loops = loops.append(loop)
     return models, loops
 
 
@@ -356,11 +357,11 @@ def summery_rmsd_scores(directory, score):
                     get_one_pdb_rmsd_scores(pdb_folder, score, get_min_rmsd_by_type_score).to_csv(output_file_5_5, header=first_pdb, index=False)
                     first_pdb = False
 
-    # plot_summery_scores(directory, summery_best_10, score)
-    # plot_summery_scores(directory, summery_best_5_by_type, score)
-    #
-    # plot_boxplot_cdrs_rmsd(directory, summery_best_10)
-    # plot_boxplot_cdrs_rmsd(directory, summery_best_5_by_type)
+    plot_summery_scores(directory, summery_best_10, score)
+    plot_summery_scores(directory, summery_best_5_by_type, score)
+
+    plot_boxplot_cdrs_rmsd(directory, summery_best_10)
+    plot_boxplot_cdrs_rmsd(directory, summery_best_5_by_type)
 
     # summery_differences(directory, score, summery_best_10, summery_best_5_by_type)
 
@@ -400,6 +401,11 @@ if __name__ == '__main__':
         else:
             SCORES_FILE = "scores.txt"
         score = "soap_score"
+
+    if IMPROVE:
+        SCORES_FILE = "H3_NanoNet_modeling_scores_rmsd_imp.csv"
+        SUMMERY_PATH += "_imp"
+        PLOTS_PATH += "_imp"
 
     else:
         raise ValueError
