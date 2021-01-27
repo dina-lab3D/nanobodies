@@ -6,11 +6,13 @@ from NanoNetUtils import remove_pad, get_sequence, get_seq
 import cdr_annotation
 import os
 from Bio.PDB import *
+import re
 
-DIST_STD = 0.63
-OMEGA_STD = 0.424
-THETA_STD = 0.3
-PHI_STD = 0.22
+
+DIST_STD = 0.63  # =0.63
+OMEGA_STD = 0.5  # =0.424
+THETA_STD = 0.3  # =0.3
+PHI_STD = 0.22  # =0.22
 
 PROBLEM = ["1XGR_1"]
 
@@ -85,7 +87,7 @@ def write_const_file(sequence, restraints_matrix):
     # print(cdr_e - cdr_s+1)
     with open(pdb_dir + "_constraints", 'w') as const_file:
         write_const_dist(const_file, distance_restraints, cdr_s, sequence)
-        write_const_omega(const_file, omega_restraints, cdr_s, sequence)
+        # write_const_omega(const_file, omega_restraints, cdr_s, sequence)
         write_const_theta(const_file, thetha_restraints, cdr_s, sequence)
         write_const_phi(const_file, phis_restraints, cdr_s, sequence)
 
@@ -103,12 +105,12 @@ def sanity_check(all_restraints, pdb, sequence):
         print(cdr3_e - cdr3_s + 1)
         print(distance_restraints.shape[0])
         print(distance_restraints.shape[1])
-        print("cdr3 sequence error!!!")
+        print("{} cdr3 sequence error!!!".format(pdb))
         error = True
 
     if np.sum(distance_restraints[0]) == 0 or np.sum(distance_restraints[-1]) == 0 \
             or np.sum(distance_restraints[:,0]) ==0 or np.sum(distance_restraints[:,-1]) == 0:
-        print("remove pad error!!!")
+        print("{} remove pad error!!!".format(pdb))
         error = True
 
     a, b = cdr_annotation.find_cdr3(seq_aa)
@@ -118,7 +120,7 @@ def sanity_check(all_restraints, pdb, sequence):
         print(seq_aa[a:b+1])
         print(seq_fa[c:d+1])
         print(sequence[cdr3_s:cdr3_e+1])
-        print("find_cdr3 error!!!")
+        print("{} find_cdr3 error!!!".format(pdb))
         error = True
     if not error:
         print("{} finished successfully!".format(pdb))
@@ -133,9 +135,9 @@ if __name__ == '__main__':
 
     nano_net_model = load_model(args.NanoNet)
     os.chdir(args.Rosetta_pdbs)
-
+    i = 0
     for pdb_dir in os.listdir(os.getcwd()):
-        if os.path.isdir(pdb_dir) and pdb_dir != "1YC7_1":
+        if os.path.isdir(pdb_dir) and re.fullmatch("[a-zA-Z0-9]{4}_[0-9]", pdb_dir) and pdb_dir != "1YC7_1":
             os.chdir(pdb_dir)
             model = PDBParser().get_structure(pdb_dir, "grafting/model-0.relaxed.pdb")[0]["H"]
             if pdb_dir in PROBLEM:
@@ -148,6 +150,6 @@ if __name__ == '__main__':
             write_const_file(seq, restraints)
             sanity_check(restraints, pdb_dir, seq)
             os.chdir("..")
+            i += 1
 
-
-
+    print(i)
