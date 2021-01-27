@@ -9,31 +9,36 @@ if __name__ == '__main__':
 
 
 
-    dir = "/cs/usr/tomer.cohen13/lab/NN/RosettaFasta"
-    # flags_path = "/cs/labs/dina/tomer.cohen13/NN/abH3.flags"
-    os.chdir(dir)
-    for pdb in os.listdir(os.getcwd()):
 
-        os.chdir(pdb)
-        subprocess.run("rm -f slurm-*", shell=True)
-        subprocess.run("rm -f *.sh", shell=True)
-        os.chdir("..")
-        continue
 
-        if pdb == "1YC7_1" or pdb == "summery_rosetta_nn" or pdb == "plots_rosetta_nn":
-            continue
-        os.chdir(pdb)
-        for i in range(1, 201):
-            folder = "H3_modeling"
-            code = "model-0.relaxed_%04d.pdb" % i
-            model_path = os.path.join(folder, code)
-            if not os.path.exists(model_path):
-                print("failed!!!!!")
-                print(pdb)
-                print(i)
-        print(pdb)
-        os.chdir("..")
-    exit(0)
+
+
+
+    # dir = "/cs/usr/tomer.cohen13/lab/NN/RosettaFasta"
+    # # flags_path = "/cs/labs/dina/tomer.cohen13/NN/abH3.flags"
+    # os.chdir(dir)
+    # for pdb in os.listdir(os.getcwd()):
+    #
+    #     os.chdir(pdb)
+    #     subprocess.run("rm -f slurm-*", shell=True)
+    #     subprocess.run("rm -f *.sh", shell=True)
+    #     os.chdir("..")
+    #     continue
+    #
+    #     if pdb == "1YC7_1" or pdb == "summery_rosetta_nn" or pdb == "plots_rosetta_nn":
+    #         continue
+    #     os.chdir(pdb)
+    #     for i in range(1, 201):
+    #         folder = "H3_modeling"
+    #         code = "model-0.relaxed_%04d.pdb" % i
+    #         model_path = os.path.join(folder, code)
+    #         if not os.path.exists(model_path):
+    #             print("failed!!!!!")
+    #             print(pdb)
+    #             print(i)
+    #     print(pdb)
+    #     os.chdir("..")
+    # exit(0)
 
     # dir = "/cs/usr/tomer.cohen13/lab/NN/TestPDBs_backup"
     # os.chdir(dir)
@@ -54,39 +59,39 @@ if __name__ == '__main__':
     #
 
 
-    # if not os.path.exists("/cs/labs/dina/tomer.cohen13/NN/RosettaFasta"):
-    #     os.mkdir("/cs/labs/dina/tomer.cohen13/NN/RosettaFasta")
-    #
-    # names_file = "/cs/labs/dina/tomer.cohen13/NN/NanoNetPDBs/test_names_NanoNet_model.pkl"
-    # with open(names_file, "rb") as input_file:
-    #     names_list = pickle.load(input_file)
-    #
-    # os.chdir('/cs/usr/tomer.cohen13/lab/NN/NanoNetPDBs')
-    #
-    # for pdb_dir in names_list:
-    #
-    #     pdb_name = os.path.basename(pdb_dir)
-    #     if not os.path.exists("/cs/labs/dina/tomer.cohen13/NN/RosettaFasta/" + pdb_name):
-    #         os.mkdir("/cs/labs/dina/tomer.cohen13/NN/RosettaFasta/" + pdb_name)
-    #     os.chdir(pdb_dir)
-    #     subprocess.run("cp " + pdb_name + ".fa /cs/labs/dina/tomer.cohen13/NN/RosettaFasta/" + pdb_name + "/" + pdb_name + ".fa", shell=True)
-    #     subprocess.run("cp " + pdb_name + ".pdb /cs/labs/dina/tomer.cohen13/NN/RosettaFasta/" + pdb_name + "/" + pdb_name + ".pdb", shell=True)
-    #
-    #     # for i in range(5):
-    #     #     subprocess.run("cp model_" + str(i) + ".pdb /cs/labs/dina/tomer.cohen13/NN/TestPDBs/" + pdb_name + "/model_" + str(i) + ".pdb", shell=True)
-    #     #     subprocess.run("cp loop_" + str(i) + ".pdb /cs/labs/dina/tomer.cohen13/NN/TestPDBs/" + pdb_name + "/loop_" + str(i) + ".pdb", shell=True)
-    #
-    #     subprocess.run("cp ref.pdb /cs/labs/dina/tomer.cohen13/NN/RosettaFasta/" + pdb_name + "/ref.pdb", shell=True)
-    #     subprocess.run("cp ref_cdr1.pdb /cs/labs/dina/tomer.cohen13/NN/RosettaFasta/" + pdb_name + "/ref_cdr1.pdb", shell=True)
-    #     subprocess.run("cp ref_cdr2.pdb /cs/labs/dina/tomer.cohen13/NN/RosettaFasta/" + pdb_name + "/ref_cdr2.pdb", shell=True)
-    #     subprocess.run("cp ref_cdr3.pdb /cs/labs/dina/tomer.cohen13/NN/RosettaFasta/" + pdb_name + "/ref_cdr3.pdb", shell=True)
-    #
-    #     # subprocess.run("cp scores.txt /cs/labs/dina/tomer.cohen13/NN/RosettaFasta/" + pdb_name + "/scores.txt", shell=True)
-    #
-    #     os.chdir("../..")
+    if not os.path.exists("/cs/labs/dina/tomer.cohen13/NN/ModellerFasta"):
+        os.mkdir("/cs/labs/dina/tomer.cohen13/NN/ModellerFasta")
+
+    names_file = "/cs/labs/dina/tomer.cohen13/NN/NanoNetPDBs/NanoNet_arrays/test_names_NanoNet_model.pkl"
+    with open(names_file, "rb") as input_file:
+        names_list = pickle.load(input_file)
+
+    os.chdir('/cs/usr/tomer.cohen13/lab/NN/NanoNetPDBs')
+
+    for pdb_dir in names_list:
+
+        pdb_name = os.path.basename(pdb_dir)
+        if not os.path.exists("/cs/labs/dina/tomer.cohen13/NN/ModellerFasta/" + pdb_name):
+            os.mkdir("/cs/labs/dina/tomer.cohen13/NN/ModellerFasta/" + pdb_name)
+        os.chdir(pdb_dir)
+        subprocess.run("cp " + pdb_name + ".fa /cs/labs/dina/tomer.cohen13/NN/ModellerFasta/" + pdb_name + "/" + pdb_name + ".fa", shell=True)
+        subprocess.run("cp " + pdb_name + ".pdb /cs/labs/dina/tomer.cohen13/NN/ModellerFasta/" + pdb_name + "/" + pdb_name + ".pdb", shell=True)
+
+        # for i in range(5):
+        subprocess.run("cp model_" + str(0) + ".pdb /cs/labs/dina/tomer.cohen13/NN/ModellerFasta/" + pdb_name + "/model_" + str(0) + ".pdb", shell=True)
 
 
+        subprocess.run("cp ref.pdb /cs/labs/dina/tomer.cohen13/NN/ModellerFasta/" + pdb_name + "/ref.pdb", shell=True)
+        subprocess.run("cp ref_cdr1.pdb /cs/labs/dina/tomer.cohen13/NN/ModellerFasta/" + pdb_name + "/ref_cdr1.pdb", shell=True)
+        subprocess.run("cp ref_cdr2.pdb /cs/labs/dina/tomer.cohen13/NN/ModellerFasta/" + pdb_name + "/ref_cdr2.pdb", shell=True)
+        subprocess.run("cp ref_cdr3.pdb /cs/labs/dina/tomer.cohen13/NN/ModellerFasta/" + pdb_name + "/ref_cdr3.pdb", shell=True)
 
+        # subprocess.run("cp scores.txt /cs/labs/dina/tomer.cohen13/NN/RosettaFasta/" + pdb_name + "/scores.txt", shell=True)
+
+        os.chdir("../..")
+
+
+    exit()
 
     dir = "/cs/usr/tomer.cohen13/lab/NN/RosettaFasta"
     # flags_path = "/cs/labs/dina/tomer.cohen13/NN/abH3.flags"
