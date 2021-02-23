@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.cluster import KMeans
-
+from statannot import add_stat_annotation
 
 
 # no_cut = pd.read_csv("/cs/labs/dina/tomer.cohen13/nanobodies/COVID_19/nb_paper/epiDock_summey.csv", skipinitialspace=True)
@@ -28,7 +28,7 @@ for score, pos in zip(consurf_df["SCORE"],consurf_df["3LATOM"]):
 
     positions.append(int(pos[3:6]))
     consurf_scores.append(score)
-huji mail
+
 ########################################################################################################################
 #                                                   Mutations                                                          #
 ########################################################################################################################
@@ -114,6 +114,32 @@ start_pos = positions[0]
 
 for contact_pos in ace2_contact_pos:
     ace2_contact[contact_pos-start_pos] = 1
+
+
+########################################################################################################################
+#                                               curvature boxplot                                                      #
+########################################################################################################################
+
+ab_nr_data = pd.read_csv("/cs/usr/tomer.cohen13/lab/Epitop_paper/PDB_NR_new_ab.csv")
+nb_nr_data = pd.read_csv("/cs/usr/tomer.cohen13/lab/Epitop_paper/PDB_NR_new_nb.csv")
+
+nb_nr_data = (nb_nr_data.drop([7]))
+
+
+box_data  = pd.DataFrame({"PDB": list(nb_nr_data["PDB"]) + list(ab_nr_data["PDB"]), "name": list(nb_nr_data["Nb name"]) + list(ab_nr_data["Ab name"]), "type": len(nb_nr_data) * ["Nb"] + len(ab_nr_data) * ["Fab"] , "Spike cavity": list(nb_nr_data["cavity spike"]) + list(ab_nr_data["cavity spike"]) })
+
+ax = sns.boxplot(x="type", y="Spike cavity", data=box_data, color="white")
+ax2 = sns.swarmplot(x="type", y="Spike cavity", data=box_data)
+sns.despine(bottom = False, left = False, right=True, top=True)
+add_stat_annotation(ax, data=box_data, x="type", y="Spike cavity",box_pairs=[("Fab", "Nb")], test='t-test_welch', text_format='star', loc='outside', verbose=2)
+ax.set_xlabel('')
+
+
+plt.savefig('/cs/usr/tomer.cohen13/lab/Epitop_paper/curvature_boxplot.png', dpi=500)
+box_data.to_csv("/cs/usr/tomer.cohen13/lab/Epitop_paper/curvature_data.csv", index=False)
+exit()
+
+
 
 ########################################################################################################################
 #                                               Nb Ab compare                                                          #

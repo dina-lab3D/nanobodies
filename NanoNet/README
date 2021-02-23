@@ -1,0 +1,24 @@
+
+for Nb (or Ab) CDR3 loop modeling optimization.
+
+Steps:
+
+1. generate Nb model using Rosetta antibody (or any modeling tool of your choice).
+for example using the following command in Rosetta antibody:
+
+antibody.linuxgccrelease -n_multi_templates 1 -vhh_only -fasta <your_fasta> | tee grafting.log
+
+2. generate constraints file using NanoNet:
+
+python3 RosettaConstaints.py <pdb_file (like model-0.relaxed.pdb)> NanoNet_trained_model
+
+
+this will create a constraints file with the name: "<pdb_file>)_constraints"
+(make sure the heavy chain has the chain id H!)
+
+3. use the constraints file to model the CDR3:
+
+antibody_H3.linuxgccrelease @abH3.flags -s <pdb_file> -nstruct 100 -out:file:scorefile H3_NanoNet_modeling_scores.fasc -out:path:pdb H3_NanoNet_modeling -constraints:cst_file <const_file> -constraints:cst_weight 1.0  > h3_nanonet_modeling-0.log
+
+
+See RosettaCommons for more details

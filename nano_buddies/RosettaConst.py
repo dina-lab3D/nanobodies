@@ -10,7 +10,7 @@ import re
 
 
 DIST_STD = 0.63  # =0.63
-OMEGA_STD = 0.5  # =0.424
+OMEGA_STD = 0.6  # =0.424
 THETA_STD = 0.3  # =0.3
 PHI_STD = 0.22  # =0.22
 
@@ -87,7 +87,7 @@ def write_const_file(sequence, restraints_matrix):
     # print(cdr_e - cdr_s+1)
     with open(pdb_dir + "_constraints", 'w') as const_file:
         write_const_dist(const_file, distance_restraints, cdr_s, sequence)
-        # write_const_omega(const_file, omega_restraints, cdr_s, sequence)
+        write_const_omega(const_file, omega_restraints, cdr_s, sequence)
         write_const_theta(const_file, thetha_restraints, cdr_s, sequence)
         write_const_phi(const_file, phis_restraints, cdr_s, sequence)
 
@@ -122,6 +122,11 @@ def sanity_check(all_restraints, pdb, sequence):
         print(sequence[cdr3_s:cdr3_e+1])
         print("{} find_cdr3 error!!!".format(pdb))
         error = True
+    if b-a < 5:
+        print(seq_aa[a:b + 1])
+        print("{} cdr3 too short!!!".format(pdb))
+        error = True
+
     if not error:
         print("{} finished successfully!".format(pdb))
 

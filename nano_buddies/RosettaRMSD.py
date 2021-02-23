@@ -21,8 +21,8 @@ MATCH_SUB = []
 MATCH_FULL = []
 MATCH_CUT = []
 SEQS = []
-IMPROVE = "_imp"
-IMPROVE_PSBS = ["5MP2_1", "2YK1_1", "1OL0_1", "2EH7_1", "5N4G_1", "6NB8_1", "2FAT_1", "6IEB_1"]
+IMPROVE = "_no_omega"
+# IMPROVE_PSBS = ["5MP2_1", "2YK1_1", "1OL0_1", "2EH7_1", "5N4G_1", "6NB8_1", "2FAT_1", "6IEB_1"]
 
 
 def adjust_lengths(ref_seq, model_seq, pdb_dir):
@@ -51,41 +51,46 @@ def adjust_lengths(ref_seq, model_seq, pdb_dir):
                 indexes = match.span()
 
                 MATCH_SUB.append(pdb_dir)
-            # else:
-            #     i = len(model_seq)
-            #     while not match:
-            #         i -= 1
-            #         match = re.search(model_seq[:i], ref_seq)
-            #         if i == "50":
-            #             print(pdb_dir)
-            #             exit(1)
-            #
-            #     start, end = match.span()
-            #     subprocess.run(get_frag_chain + " ref_renumber.pdb H " + str(start+1) + " " + str(end) + " > temp.pdb", shell=True, stdout=subprocess.DEVNULL)
-            #     subprocess.run(renumber + " temp.pdb > ref_same_size.pdb", shell=True, stdout=subprocess.DEVNULL)
-            #     os.remove("temp.pdb")
-            #     indexes = (0, i)
-            #     MATCH_CUT.append(pdb_dir)
-            #     SEQS.append([ref_seq[start:end], model_seq[0:i]])
-
             else:
                 i = 0
                 while not match:
                     i += 1
                     match = re.search(model_seq[i:], ref_seq)
-                    if i == "50":
-                        print(pdb_dir)
-                        exit(1)
                 start, end = match.span()
-                subprocess.run(get_frag_chain + " ref_renumber.pdb H " + str(start+1) + " " + str(end) + " > temp.pdb", shell=True, stdout=subprocess.DEVNULL)
-                subprocess.run(renumber + " temp.pdb > ref_same_size.pdb", shell=True, stdout=subprocess.DEVNULL)
+                subprocess.run(get_frag_chain + " ref_renumber.pdb H " + str(
+                    start + 1) + " " + str(end) + " > temp.pdb", shell=True,
+                               stdout=subprocess.DEVNULL)
+                subprocess.run(renumber + " temp.pdb > ref_same_size.pdb",
+                               shell=True, stdout=subprocess.DEVNULL)
                 os.remove("temp.pdb")
                 indexes = (i, len(model_seq))
                 print(ref_seq[start:end])
-                print(model_seq[i+1:len(model_seq)])
+                print(model_seq[i:len(model_seq)])
 
                 MATCH_CUT.append(pdb_dir)
                 SEQS.append([ref_seq[start:end], model_seq[i:]])
+
+                if i > 7:
+                    match = False
+                    i = len(model_seq)
+                    while not match:
+                        i -= 1
+                        match = re.search(model_seq[:i], ref_seq)
+
+                    start, end = match.span()
+                    subprocess.run(
+                        get_frag_chain + " ref_renumber.pdb H " + str(
+                            start + 1) + " " + str(end) + " > temp.pdb",
+                        shell=True, stdout=subprocess.DEVNULL)
+                    subprocess.run(renumber + " temp.pdb > ref_same_size.pdb",
+                                   shell=True, stdout=subprocess.DEVNULL)
+                    os.remove("temp.pdb")
+                    indexes = (0, i)
+
+                    print(ref_seq[start:end])
+                    print(model_seq[0:i])
+                    MATCH_CUT.append(pdb_dir)
+                    SEQS.append([ref_seq[start:end], model_seq[0:i]])
 
     os.remove("ref_renumber.pdb")
     return indexes
@@ -208,8 +213,11 @@ if __name__ == '__main__':
     os.chdir(args.pdbs)
     for pdb in os.listdir(os.getcwd()):
 
-        if pdb == "1YC7_1" or not re.fullmatch("[a-zA-Z0-9]{4}_[0-9]", pdb) or pdb not in IMPROVE_PSBS:
+        if pdb == "1YC7_1" or not re.fullmatch("[a-zA-Z0-9]{4}_[0-9]", pdb):
             print("{} Failed, no score file".format(pdb))
+            continue
+        if os.path.exists(pdb + "/H3_NanoNet_modeling_scores_rmsd_no_omega.csv"):
+            print("{} done".format(pdb))
             continue
         # os.chdir(pdb)
         # subprocess.run("rm -f ref_cdr*", shell=True)
@@ -222,6 +230,7 @@ if __name__ == '__main__':
         # subprocess.run("rm -f temp_cdr3.pdb", shell=True)
         #
         # os.chdir("..")
+        print(pdb)
         calc_rmsds(pdb, args.nano_net)
         print("{} ended successfully".format(pdb))
     print(MATCH_FULL)

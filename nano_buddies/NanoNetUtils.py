@@ -271,19 +271,26 @@ def generate_label(fasta, pdb, cdr=3):
     return labels_matrix
 
 
-# seq = "QLLESGPGLVKPSETLSLTCTVSGGSIWGWIRQPPGKGLEWIGSIYSSGSTYYNPSLKSRVTTSVDTSKNQFSLRLSSVTAADTAVYYCVAWFGDLLSLKGVELWGQGTLVTVSS"
+# seq = "DVQLVESGGGLVQAGGSLRLSCAASGFTFSNYVMYWGRQAPGKGREWVSGIDSDGSDTAYASSVKGRFTISRDNAKNTLYLQMNNLKPEDTALYYCVKSKDPYGSPWTRSEFDDYWGQGTQVTVSS"
 # a, b = find_cdr3(seq)
-# print(a)
+# print(a,b)
 # print(seq[a:b+1])
 # print(seq)
-# model = PDBParser().get_structure("/cs/labs/dina/tomer.cohen13/NN/RosettaFasta/2YK1_1/grafting/model-0.relaxed.pdb", "/cs/labs/dina/tomer.cohen13/NN/RosettaFasta/2YK1_1/grafting/model-0.relaxed.pdb")[0]["H"]
+# print(len(seq))
+#
+# model = PDBParser().get_structure("/cs/labs/dina/tomer.cohen13/NN/CovidNbFasta/34/grafting/model-0.relaxed.pdb", "/cs/labs/dina/tomer.cohen13/NN/CovidNbFasta/34/grafting/model-0.relaxed.pdb")[0]["H"]
 # seq, aa_residues = get_seq(model)
 #
 # a, b = find_cdr3(seq)
-# print(a)
+# print(a,b)
 # print(seq[a:b+1])
 # print(seq)
+# print(len(seq))
 #
+#
+# for i in range(len(aa_residues)):
+#     print(aa_residues[i].get_id())
+
 # for aa in aa_residues:
 #     print(aa.get_id())
 # (",d","dd").

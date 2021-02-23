@@ -1,0 +1,23 @@
+
+# constraints are enabled by default, so flags are shown just to indicate that they can be turned off
+# recommended as kink is present in 90% of Abs and as VH-VL Q-Q is present in 808%
+-antibody:h3_loop_csts_lr true
+-antibody:h3_loop_csts_hr true
+-antibody:auto_generate_h3_kink_constraint true
+-antibody:constrain_vlvh_qq false
+-antibody:snugfit false
+
+# standard settings, for packages used by antibody_H3
+-ex1
+-ex2
+-extrachi_cutoff 0
+
+# necessary if running multiple procs w/o MPI
+-multiple_processes_writing_to_one_directory
+
+# specify output file
+# -out:file:scorefile H3_modeling_scores.fasc
+
+# specify output folder
+# -out:path:pdb H3_modeling
+

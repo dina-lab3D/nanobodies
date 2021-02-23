@@ -401,14 +401,15 @@ if __name__ == '__main__':
         else:
             SCORES_FILE = "scores.txt"
         score = "soap_score"
-
-    if IMPROVE:
-        SCORES_FILE = "H3_NanoNet_modeling_scores_rmsd_imp.csv"
-        SUMMERY_PATH += "_imp"
-        PLOTS_PATH += "_imp"
-
     else:
         raise ValueError
+
+    if IMPROVE:
+        SCORES_FILE = "H3_NanoNet_modeling_scores_rmsd_no_omega.csv"
+        SUMMERY_PATH += "_no_omega"
+        PLOTS_PATH += "_no_omega"
+
+
 
     if not os.path.isdir(os.path.join(args.directory, PLOTS_PATH)):
         os.mkdir(os.path.join(args.directory, PLOTS_PATH))

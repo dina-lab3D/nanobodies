@@ -132,7 +132,7 @@ def rosetta_loops():
 
     :return:
     """
-    time, memory, array = "1-0", "4000m", "1"
+    time, memory, array = "1-0", "4000m", "10"
 
     for pdb_dir in os.listdir(os.getcwd()):
         # if not re.fullmatch("[a-zA-Z0-9]{4}_[0-9]", pdb_dir) or pdb_dir not in LONG:

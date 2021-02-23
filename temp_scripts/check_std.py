@@ -1,8 +1,8 @@
 import numpy as np
 
-OMEGA_VAR = 0.036
-THETA_VAR = 0.0153
-PHI_VAR = 0.0082
+OMEGA_VAR = 0.045
+THETA_VAR = 0.02
+PHI_VAR = 0.01
 
 
 if __name__ == '__main__':

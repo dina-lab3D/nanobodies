@@ -39,7 +39,10 @@ HEADER = "/cs/usr/tomer.cohen13/lab/nanobodies/COVID_19/antibodies/anti_header.c
 
 
 def get_interface(pdb, pdbs_df):
-    dir_name = pdb.split("pdb")[1].split(".")[0]
+
+    print(pdb)
+    dir_name = pdb.split(".")[0]
+    # dir_name = pdb.split("pdb")[1].split(".")[0]  # for older version...
     os.mkdir(dir_name)
     subprocess.run("mv " + pdb + " " + os.path.join(dir_name, pdb), shell=True)
     os.chdir(dir_name)
@@ -78,7 +81,7 @@ if __name__ == '__main__':
         header_df.to_csv(epi_file, header=True, index=False)
         for pdb in os.listdir(os.getcwd()):
             #  if the folder is pdb folder
-            if pdb.endswith(".ent"):
+            if pdb.endswith(".pdb"):  # change to ent if needed
                 epi_df, antibody_names = get_interface(pdb, chains_df)
                 for df, name in zip(epi_df, antibody_names):
                     df.insert(0, column="ANTIBODY", value=name)
