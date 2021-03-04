@@ -8,6 +8,8 @@ import re
 from NanoNetUtils import generate_label, generate_input, valid_pdb
 
 CDR = 2
+BAD_PDBS = ["3U1S_1", "5DRX_1", "6BSP_1"]
+
 
 if __name__ == '__main__':
     """
@@ -25,7 +27,7 @@ if __name__ == '__main__':
             os.chdir(directory)
             print(directory)
             for pdb in (os.listdir(os.getcwd())):
-                if os.path.isdir(pdb):
+                if os.path.isdir(pdb) and pdb not in BAD_PDBS:
                     os.chdir(pdb)
                     # print(pdb)
                     if not valid_pdb("ref.pdb"):
@@ -33,8 +35,8 @@ if __name__ == '__main__':
                         failed_pdbs = failed_pdbs.append(pd.DataFrame({"PDB":[pdb], "FOLDER":[directory]}))
                         os.chdir("..")
                         continue
-                    feature_matrix.append(generate_label(pdb + ".fa", "ref.pdb"))
-                    input_matrix.append(generate_input(pdb+ ".fa", CDR))
+                    feature_matrix.append(generate_label(pdb + ".fa", "ref.pdb", CDR))
+                    input_matrix.append(generate_input(pdb+ ".fa"))
                     pdb_names.append(os.path.join(directory,pdb))
                     os.chdir("..")
             os.chdir("..")
@@ -54,7 +56,7 @@ if __name__ == '__main__':
     print("Number of valid samples: {}".format(len(pdb_names)))
     print("Total number of faild samples: {}".format(len(failed_pdbs["PDB"])))
     
-    # pickle.dump(feature_matrix, open(labels_file_name + ".pkl", "wb"))
-    # pickle.dump(input_matrix, open(input_file_name + ".pkl", "wb"))
-    # pickle.dump(np.array(pdb_names), open(pdb_names_file + ".pkl", "wb"))
-    # failed_pdbs.to_csv("nn_failed_pdbs.csv")
+    pickle.dump(feature_matrix, open(labels_file_name + ".pkl", "wb"))
+    pickle.dump(input_matrix, open(input_file_name + ".pkl", "wb"))
+    pickle.dump(np.array(pdb_names), open(pdb_names_file + ".pkl", "wb"))
+    failed_pdbs.to_csv("nn_failed_pdbs.csv")
