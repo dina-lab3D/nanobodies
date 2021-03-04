@@ -12,6 +12,8 @@ CDR_MAX_LENGTH = 32
 AA_DICT = {"A": 0, "C": 1, "D": 2, "E": 3, "F": 4, "G": 5, "H": 6, "I": 7, "K": 8, "L": 9, "M": 10, "N": 11, "P": 12,
            "Q": 13, "R": 14, "S": 15, "T": 16, "W": 17, "Y": 18, "V": 19, "-": 20, "X": 20}
 
+CDR_POS_DICT = {"1I3G_1":[98, 101], "3J8Z_1":[94,104], "6BIT_1":[98,102], "6ANP_1":[97,99], "5YE3_1":[98,101], "5YE4_1":[98,101], "6CT7_1":[100,103], "5YY5_2":[98,102]}
+
 
 def get_sequence(fasta_filename):
     for seq_record in SeqIO.parse(fasta_filename, "fasta"):
@@ -19,22 +21,26 @@ def get_sequence(fasta_filename):
         return sequence
 
 
-def one_hot_coding(seq, cdr):
-    """
-    :param seq:
-    :param cdr:
-    :return:
-    """
+def one_hot_coding(seq, cdr, pdb_name):
+
     find = [find_cdr1, find_cdr2, find_cdr3]
     [cdr_start, cdr_end] = find[cdr - 1](seq)
+    if pdb_name in CDR_POS_DICT and cdr == 3:
+        [cdr_start, cdr_end] = CDR_POS_DICT[pdb_name]
+
+    cdr_start -=2
+    cdr_end += 2
 
     cdr_len = (cdr_end + 1 - cdr_start)
-
+    # print(cdr_len)
     cdr_pad = (CDR_MAX_LENGTH - cdr_len) // 2
 
     seq_cdr = cdr_pad * "-" + seq[cdr_start:cdr_end + 1] + (
                 CDR_MAX_LENGTH - cdr_pad - cdr_len) * "-"
-
+    # print(seq_cdr)
+    # print(seq)
+    # print(pdb_name)
+    # print(cdr_start, cdr_end)
     cdr_matrix = np.zeros((CDR_MAX_LENGTH, 21))
 
     for i in range(CDR_MAX_LENGTH):
@@ -85,6 +91,9 @@ def remove_pad(one_hot_matrix, seq):
 
     [cdr_start, cdr_end] = find_cdr3(seq)
 
+    cdr_start -=2
+    cdr_end += 2
+
     cdr_len = (cdr_end + 1 - cdr_start)
     pad_left = (CDR_MAX_LENGTH - cdr_len) // 2
     pad_right = pad_left + cdr_len
@@ -97,13 +106,13 @@ def generate_input(pdb_fasta, fasta=True):
         seq = get_sequence(pdb_fasta)
     else:
         seq = pdb_fasta
-    cdr3_matrix = one_hot_coding(seq, 3)
+    cdr3_matrix = one_hot_coding(seq, 3, pdb_fasta.split(".")[0])
 
     if "X" in seq:
         print("Warning, PDB: {}, has unknown aa".format(pdb_fasta))
 
-    cdr1_matrix = one_hot_coding(seq, 1)
-    third_matrix = one_hot_coding(seq, 2)
+    cdr1_matrix = one_hot_coding(seq, 1,pdb_fasta.split(".")[0])
+    third_matrix = one_hot_coding(seq, 2,pdb_fasta.split(".")[0])
 
     return np.dstack([cdr1_matrix, cdr3_matrix, third_matrix])
 
@@ -253,6 +262,12 @@ def generate_label(fasta, pdb, cdr=3):
     find = [find_cdr1, find_cdr2, find_cdr3]
 
     [cdr_start, cdr_end] = find[cdr-1](seq)
+
+    if fasta.split(".")[0] in CDR_POS_DICT:
+        [cdr_start, cdr_end] = CDR_POS_DICT[fasta.split(".")[0]]
+
+    cdr_start -=2
+    cdr_end += 2
 
     # for padding the result matrix with zeros
     pad = (CDR_MAX_LENGTH - (cdr_end+1 - cdr_start)) // 2
