@@ -21,15 +21,15 @@ tf.keras.utils.get_custom_objects().update({'swish': layers.Activation(swish)})
 
 
 CDR_DICT = {3:1, 1:0, 2:2}
-DIM = 1  # normal is 3
-CDR = 2  # normal is 3
-KERNELS = 16  # normal is 32
-RESNET_BLOCKS = 5  # normal is 3
-RESNET_SIZE = (9, 9)  # normal is (17,17)
-FIRST_RESNET_SIZE = (9, 9)  # normal is (17,17)
-DIALETED_RESNET_BLOCKS = 10  # normal is 5
+DIM = 3  # normal is 3
+CDR = 1  # normal is 3
+KERNELS = 32  # normal is 32
+RESNET_BLOCKS = 3  # normal is 3
+RESNET_SIZE = (17, 17)  # normal is (17,17)
+FIRST_RESNET_SIZE = (17, 17)  # normal is (17,17)
+DIALETED_RESNET_BLOCKS = 5  # normal is 5
 DIALETION = [1,2,4,8,16]  # normal is [1,2,4,8,16]
-DIALETED_RESNET_SIZE = (3, 3)  # normal is (5,5)
+DIALETED_RESNET_SIZE = (5, 5)  # normal is (5,5)
 EPOCHS = 150  # normal is 150
 LR = 0.0005  # normal is 0.0005
 TEST_SIZE = 50/2185  # 50 nano-bodies
@@ -37,53 +37,18 @@ VAL_SIZE = 0.075  # 150 nano-bodies (0.075)
 BATCH = 32  # normal is 32
 DROPOUT = 0.2  # normal is 0.2
 END_CONV_SIZE = 4   # normal is 4
-END_CONV_KER = (3, 3)  # normal is (5,5)
+END_CONV_KER = (5, 5)  # normal is (5,5)
 DIALETED_RESNET_KERNELS = 64  # normal is 64
 ACTIVATION = "relu"  # normal relu
 END_ACTIVATION = "elu"  # normal elu
 LOSS = "mse"
 BINS = False
 POOL = False
-files_name = "DIM_2_3"
-
-
-class PolynomialDecay:
-    def __init__(self, maxEpochs=EPOCHS, initAlpha=LR, power=0.9):
-        # store the maximum number of epochs, base learning rate,
-        # and power of the polynomial
-        self.maxEpochs = maxEpochs
-        self.initAlpha = initAlpha
-        self.power = power
-
-    def __call__(self, epoch):
-        # compute the new learning rate based on polynomial decay
-        decay = (1 - (epoch / float(self.maxEpochs))) ** self.power
-        alpha = self.initAlpha * decay
-        # return the new learning rate
-        return float(alpha)
-
-
-class StepDecay:
-    def __init__(self, initAlpha=LR, factor=0.75, dropEvery=5):
-        # store the base initial learning rate, drop factor, and
-        # epochs to drop every
-        self.initAlpha = initAlpha
-        self.factor = factor
-        self.dropEvery = dropEvery
-
-    def __call__(self, epoch):
-        # compute the learning rate for the current epoch
-        exp = np.floor((1 + epoch) / self.dropEvery)
-        alpha = self.initAlpha * (self.factor ** exp)
-        # return the learning rate
-        return float(alpha)
+files_name = "DIM_3_1"
 
 
 def reshape_y(y):
-    if CDR == 3:
-        return [y[:,0,:,:,0].reshape(-1,32,32,1), y[:,1,:,:,:], y[:,2,:,:,:], y[:,3,:,:,:]]
-    else:
-        return [y[:, 0, 8:24, 8:24, 0].reshape(-1, 16, 16, 1), y[:, 1, 8:24, 8:24, :],y[:, 2, 8:24, 8:24, :], y[:, 3, 8:24, 8:24, :]]
+    return [y[:,0,:,:,0].reshape(-1,32,32,1), y[:,1,:,:,:], y[:,2,:,:,:], y[:,3,:,:,:]]
 
 
 def d2_net_architecture():
@@ -91,10 +56,8 @@ def d2_net_architecture():
 
     :return:
     """
-    if DIM == 1 and CDR ==3:
+    if DIM == 1:
         input_layer = tf.keras.Input(shape=(32, 21, 1), name="InputLayer")
-    elif DIM == 1 and CDR != 3:
-        input_layer = tf.keras.Input(shape=(16, 21, 1), name="InputLayer")
     else:
         input_layer = tf.keras.Input(shape=(32, 21, 3), name="InputLayer")
 
@@ -102,15 +65,11 @@ def d2_net_architecture():
 
     # first res block: 2d_conv -> relu -> 2d_conv -> batch_normalization -> add -> relu
     for i in range(RESNET_BLOCKS):
-        # for loop in DIALETION:
-        #     conv_layer = layers.Conv2D(32, RESNET_SIZE, activation=ACTIVATION,padding='same', dilation_rate=loop)(loop_layer)
-        #     conv_layer = layers.Conv2D(32, RESNET_SIZE, padding='same',dilation_rate=loop)(conv_layer)
-
-            conv_layer = layers.Conv2D(KERNELS, RESNET_SIZE, activation=ACTIVATION, padding='same')(loop_layer)
-            conv_layer = layers.Conv2D(KERNELS, RESNET_SIZE, padding='same')(conv_layer)
-            batch_layer = layers.BatchNormalization()(conv_layer)
-            loop_layer = layers.Add()([batch_layer, loop_layer])
-            loop_layer = layers.Activation(ACTIVATION)(loop_layer)
+        conv_layer = layers.Conv2D(KERNELS, RESNET_SIZE, activation=ACTIVATION, padding='same')(loop_layer)
+        conv_layer = layers.Conv2D(KERNELS, RESNET_SIZE, padding='same')(conv_layer)
+        batch_layer = layers.BatchNormalization()(conv_layer)
+        loop_layer = layers.Add()([batch_layer, loop_layer])
+        loop_layer = layers.Activation(ACTIVATION)(loop_layer)
 
     premut_layer = layers.Permute((1,3,2))(loop_layer)
 
@@ -118,8 +77,6 @@ def d2_net_architecture():
     conv_layer = layers.Conv2D(KERNELS, (5,5), activation=ACTIVATION, padding='same')(premut_layer)
     conv_layer_t = layers.Permute((2,1,3))(conv_layer)
     loop_layer = layers.Concatenate()([conv_layer, conv_layer_t])
-    if CDR != 3:
-        loop_layer = layers.Conv2D(64, (5,5), activation=ACTIVATION, padding='same')(loop_layer)
 
     # second res block: dilated_2d_conv -> relu -> dilated_2d_conv -> batch_normalization -> add -> relu
     for block in range(DIALETED_RESNET_BLOCKS):
@@ -283,10 +240,7 @@ if __name__ == '__main__':
         pdb_names = pickle.load(names_file)
 
     if DIM == 1:
-        if CDR == 3:
-            X = X[:, :, :, CDR_DICT[CDR]].reshape(-1, 32, 21, 1)
-        else:
-            X = X[:,8:24,:,CDR_DICT[CDR]].reshape(-1,16,21,1)
+        X = X[:, :, :, CDR_DICT[CDR]].reshape(-1, 32, 21, 1)
 
     train_index, test_index, _, _ = train_test_split(np.arange(len(X)), np.arange(len(Y)), test_size=TEST_SIZE)
     X_train, X_test, Y_train, Y_test = np.array(X[train_index,:,:,:]), np.array(X[test_index,:,:,:]), np.array(Y[train_index,:,:,:,:]), np.array(Y[test_index,:,:,:,:])
@@ -298,13 +252,10 @@ if __name__ == '__main__':
     pickle.dump(Y_test, open("test_Y_" + files_name + ".pkl", "wb"))
     pickle.dump(test_names, open("test_names_" + files_name + ".pkl", "wb"))
 
-    poly_decay = tf.keras.callbacks.LearningRateScheduler(PolynomialDecay())
-    step_decay = tf.keras.callbacks.LearningRateScheduler(StepDecay())
-    platau_decay = tf.keras.callbacks.ReduceLROnPlateau()
     save_model = tf.keras.callbacks.ModelCheckpoint(filepath=files_name,save_best_only=True, verbose=1)
 
     #  all features
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=LR), loss=LOSS)  # TODO: use huber loss on angles?
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=LR), loss=LOSS)
     net_history = model.fit(X_train, reshape_y(Y_train), validation_split=VAL_SIZE, epochs=EPOCHS, verbose=1, batch_size=BATCH, callbacks=[save_model])
 
     loss = model.evaluate(X_test, reshape_y(Y_test))
