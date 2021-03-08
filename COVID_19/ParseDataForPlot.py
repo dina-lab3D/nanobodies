@@ -60,14 +60,16 @@ for row in only_ms.index:
 
 epitops_df = pd.read_csv("/cs/usr/tomer.cohen13/lab/Epitop_paper/epiDock_summery_cut.csv")
 new_ab_nr = pd.read_csv("/cs/usr/tomer.cohen13/lab/Epitop_paper/new_epiDock_summey_cut.csv")
+
 epitops_df['ANTIBODY'] = epitops_df['ANTIBODY'].map(lambda x: x.split('pdb')[1].split(".ent")[0].upper())
 new_ab_nr['ANTIBODY'] = new_ab_nr['ANTIBODY'].map(lambda x: x.split('.')[0].upper())
 
 epitops_df = pd.concat([epitops_df, new_ab_nr])
 
-non_redundent = list(pd.read_csv("/cs/usr/tomer.cohen13/lab/Epitop_paper/antibodies_nr.csv")['PDB ID'])
-epitops_nr = epitops_df[epitops_df['ANTIBODY'].map(lambda x: x in non_redundent)]
-epitops_nr = epitops_nr.sort_values(by="ANTIBODY").reset_index().drop([22,10])  # drop 6zcz nanobody, and 7che 2
+non_redundent = list(pd.read_csv("/cs/labs/dina/tomer.cohen13/Epitop_paper/PDB_NR_new_ab.csv")['PDB'])
+epitops_nr = epitops_df[epitops_df['ANTIBODY'].map(lambda x: x in non_redundent or x == "GS45")]
+
+epitops_nr = epitops_nr.sort_values(by="ANTIBODY").reset_index().drop([9,22])  # drop 6zcz nanobody, and 7che 236
 
 mean_epitop_nr = np.zeros(len(positions), dtype=float)
 for i in range(len(positions)):
@@ -81,6 +83,7 @@ for i in range(len(positions)):
 
 nb_epitops_df = pd.read_csv("/cs/labs/dina/tomer.cohen13/Epitop_paper/nb_epiDock_summey_cut.csv").reindex()
 nb_epitops_df = (nb_epitops_df.drop([12]))  # 7JWB
+
 # epitops_df['ANTIBODY'] = epitops_df['ANTIBODY'].map(lambda x: x.split('pdb')[1].split(".ent")[0].upper())
 
 mean_nb_epitop_nr = np.zeros(len(positions), dtype=float)
@@ -123,7 +126,7 @@ for contact_pos in ace2_contact_pos:
 ab_nr_data = pd.read_csv("/cs/usr/tomer.cohen13/lab/Epitop_paper/PDB_NR_new_ab.csv")
 nb_nr_data = pd.read_csv("/cs/usr/tomer.cohen13/lab/Epitop_paper/PDB_NR_new_nb.csv")
 
-nb_nr_data = (nb_nr_data.drop([7]))
+nb_nr_data = (nb_nr_data.drop([7]))  # 7JWB
 
 
 box_data  = pd.DataFrame({"PDB": list(nb_nr_data["PDB"]) + list(ab_nr_data["PDB"]), "name": list(nb_nr_data["Nb name"]) + list(ab_nr_data["Ab name"]), "type": len(nb_nr_data) * ["Nb"] + len(ab_nr_data) * ["Fab"] , "Spike cavity": list(nb_nr_data["cavity spike"]) + list(ab_nr_data["cavity spike"]) })
@@ -135,9 +138,8 @@ add_stat_annotation(ax, data=box_data, x="type", y="Spike cavity",box_pairs=[("F
 ax.set_xlabel('')
 
 
-plt.savefig('/cs/usr/tomer.cohen13/lab/Epitop_paper/curvature_boxplot.png', dpi=500)
-box_data.to_csv("/cs/usr/tomer.cohen13/lab/Epitop_paper/curvature_data.csv", index=False)
-exit()
+# plt.savefig('/cs/usr/tomer.cohen13/lab/Epitop_paper/final/curvature_boxplot.pdf', dpi=500)
+# box_data.to_csv("/cs/usr/tomer.cohen13/lab/Epitop_paper/final/curvature_data.csv", index=False)
 
 
 
@@ -150,12 +152,15 @@ nb_matrix = nb_epitops_df.drop(["Unnamed: 0"], axis=1)
 ab_matrix = epitops_nr.drop(["Unnamed: 0", "index"],axis=1)
 
 #################
-nb_matrix['ANTIBODY'] = nb_matrix['ANTIBODY'].map(lambda x: x.split('.')[0].upper() if "RBDtr" not in x else x.split('.')[0])
-nb_matrix.rename({"ANTIBODY": "PDB", "PDB": "NB"}, axis=1, inplace=True)
-ab_matrix.rename({"ANTIBODY": "PDB", "PDB": "AB"}, axis=1, inplace=True)
-nb_matrix.to_csv("/cs/usr/tomer.cohen13/lab/Epitop_paper/nb_epitopes_raw_matrix.csv", index=False)
-ab_matrix.to_csv("/cs/usr/tomer.cohen13/lab/Epitop_paper/ab_epitopes_raw_matrix.csv", index=False)
-exit()
+# copy_nb = nb_matrix.copy()
+# copy_ab = ab_matrix.copy()
+#
+# copy_nb['ANTIBODY'] = copy_nb['ANTIBODY'].map(lambda x: x.split('.')[0].upper() if "RBDtr" not in x else x.split('.')[0])
+# copy_nb.rename({"ANTIBODY": "PDB", "PDB": "NB"}, axis=1, inplace=True)
+# copy_ab.rename({"ANTIBODY": "PDB", "PDB": "AB"}, axis=1, inplace=True)
+# copy_nb.to_csv("/cs/usr/tomer.cohen13/lab/Epitop_paper/final/nb_epitopes_raw_matrix.csv", index=False)
+# copy_ab.to_csv("/cs/usr/tomer.cohen13/lab/Epitop_paper/final/ab_epitopes_raw_matrix.csv", index=False)
+
 #################
 
 nb_matrix.index = nb_matrix["PDB"]
@@ -164,13 +169,14 @@ nb_matrix = nb_matrix.drop(["PDB","ANTIBODY"], axis=1)
 ab_matrix.index = ab_matrix["ANTIBODY"]
 ab_matrix = ab_matrix.drop(["PDB","ANTIBODY"], axis=1)
 
-our_nbs = ["Nb17", "Nb20","Nb21","Nb34","Nb36","Nb93","Nb95", "Nb105"]
+
+our_nbs = nb_matrix.index
 euclidian = []
 euclidian_dist = []
 jaccard = []
 jaccard_score = []
-ops = 0
 bad_ab = []
+
 for my_nb in our_nbs:
     nb_vector = np.array(nb_matrix.loc[my_nb])
     best_eucl = ""
@@ -191,22 +197,23 @@ for my_nb in our_nbs:
         if j_score > best_jaccard_score:
             best_jaccard_score = j_score
             best_jaccard = antibody
-        if np.sum(ab_vector) == 0:
-            ops +=1
+        if np.sum(ab_vector) == 0 and antibody not in bad_ab:
             bad_ab.append(antibody)
+        if my_nb == "Nb17" and antibody == "GS45":
+            print(j_score)
+            exit()
 
     euclidian.append(best_eucl)
     euclidian_dist.append(best_eucl_dist)
 
     jaccard.append(best_jaccard)
     jaccard_score.append(best_jaccard_score)
-
+exit()
 jaccard_ab = [epitops_nr[epitops_nr["ANTIBODY"] == i]["PDB"].iloc[0] for i in jaccard]
 euclidian_ab = [epitops_nr[epitops_nr["ANTIBODY"] == i]["PDB"].iloc[0] for i in euclidian]
 
 score_df = pd.DataFrame({"Nb": our_nbs, "PDB-jaccard": jaccard, "Ab-jaccard": jaccard_ab, "jaccard score": jaccard_score, "PDB-euclidean": euclidian, "Ab-euclidean": euclidian_ab, "Euclidean dist": euclidian_dist})
-score_df.to_csv("/cs/usr/tomer.cohen13/lab/Epitop_paper/best_match_nb.csv", index=False)
-
+score_df.to_csv("/cs/usr/tomer.cohen13/lab/Epitop_paper/final/best_match_nb.csv", index=False)
 
 ########################################################################################################################
 #                                               Nb figure                                                              #
@@ -253,7 +260,7 @@ for lab in heat.get_yticklabels():
         # lab.set_size(20)
         lab.set_color('green')
 
-plt.savefig('/cs/usr/tomer.cohen13/lab/Epitop_paper/label_pdb.png',dpi=500)
+plt.savefig('/cs/usr/tomer.cohen13/lab/Epitop_paper/final/label_pdb.png',dpi=500)
 
 
 fig_nb,ax_nb = plt.subplots(1,1,figsize=(26,10))
@@ -282,7 +289,7 @@ for lab in heat.get_yticklabels():
         # lab.set_size(20)
         lab.set_color('green')
 
-plt.savefig('/cs/usr/tomer.cohen13/lab/Epitop_paper/label_ab.png',dpi=500)
+plt.savefig('/cs/usr/tomer.cohen13/lab/Epitop_paper/final/label_ab.png',dpi=500)
 
 
 ########################################################################################################################
@@ -340,12 +347,11 @@ ax[5].set_xlabel('Position')
 
 
 plt.tight_layout()
-plt.savefig('/cs/usr/tomer.cohen13/lab/Epitop_paper/heatmap.png', dpi=500)
+plt.savefig('/cs/usr/tomer.cohen13/lab/Epitop_paper/final/heatmap.png', dpi=500)
 
 save_df = pd.DataFrame({"position": positions, "consurf_score": consurf_scores, "mutations_count": mutations, "ab_epitopes":mean_epitop_nr, "nb_epitopes": mean_nb_epitop_nr ,"ace2_binding": ace2_bind, "ace2_contact": ace2_contact})
-save_df.to_csv("/cs/usr/tomer.cohen13/lab/Epitop_paper/heatmap_data.csv", index=False)
+save_df.to_csv("/cs/usr/tomer.cohen13/lab/Epitop_paper/final/heatmap_data.csv", index=False)
 
-exit()
 ########################################################################################################################
 #                                               All spike Figure                                                       #
 ########################################################################################################################
@@ -449,10 +455,10 @@ ax[2].set_xlabel('Position')
 ax[3].set_xlabel('Position')
 
 plt.tight_layout()
-plt.savefig('/cs/usr/tomer.cohen13/lab/Epitop_paper/heatmap_all.png', dpi=500)
+plt.savefig('/cs/usr/tomer.cohen13/lab/Epitop_paper/final/heatmap_all.png', dpi=500)
 
 
 save_df = pd.DataFrame({"position": positions, "consurf_score": consurf_scores, "mutations_count": mutations})
-save_df.to_csv("/cs/usr/tomer.cohen13/lab/Epitop_paper/heatmap_all_data.csv", index=False)
+save_df.to_csv("/cs/usr/tomer.cohen13/lab/Epitop_paper/final/heatmap_all_data.csv", index=False)
 
 
