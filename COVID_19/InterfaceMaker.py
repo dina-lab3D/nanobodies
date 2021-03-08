@@ -47,9 +47,9 @@ def get_interface(pdb, pdbs_df):
     subprocess.run("mv " + pdb + " " + os.path.join(dir_name, pdb), shell=True)
     os.chdir(dir_name)
 
-    spike_chains = pdbs_df[pdbs_df["PDB ID"] == dir_name.upper()]["SPIKE"].iloc[0]
-    antibody_chains = pdbs_df[pdbs_df["PDB ID"] == dir_name.upper()]["ANTIBODY"].iloc[0].split(" ")
-    antibody_names = pdbs_df[pdbs_df["PDB ID"] == dir_name.upper()]["NAME"].iloc[0].split(" ")
+    spike_chains = pdbs_df[pdbs_df["PDB"] == dir_name.upper()]["Spike chain"].iloc[0]
+    antibody_chains = pdbs_df[pdbs_df["PDB"] == dir_name.upper()]["Ab chain"].iloc[0].split(" ")
+    antibody_names = pdbs_df[pdbs_df["PDB"] == dir_name.upper()]["Ab name"].iloc[0].split(" ")
 
     dfs = []
     names = []
