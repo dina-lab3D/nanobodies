@@ -22,7 +22,7 @@ tf.keras.utils.get_custom_objects().update({'swish': layers.Activation(swish)})
 
 CDR_DICT = {3:1, 1:0, 2:2}
 DIM = 3  # normal is 3
-CDR = 1  # normal is 3
+CDR = 3  # normal is 3
 KERNELS = 32  # normal is 32
 RESNET_BLOCKS = 3  # normal is 3
 RESNET_SIZE = (17, 17)  # normal is (17,17)
@@ -44,7 +44,7 @@ END_ACTIVATION = "elu"  # normal elu
 LOSS = "mse"
 BINS = False
 POOL = False
-files_name = "DIM_3_1"
+files_name = "DIM_3_3_2"
 
 
 def reshape_y(y):
@@ -245,12 +245,16 @@ if __name__ == '__main__':
     train_index, test_index, _, _ = train_test_split(np.arange(len(X)), np.arange(len(Y)), test_size=TEST_SIZE)
     X_train, X_test, Y_train, Y_test = np.array(X[train_index,:,:,:]), np.array(X[test_index,:,:,:]), np.array(Y[train_index,:,:,:,:]), np.array(Y[test_index,:,:,:,:])
     test_names = pdb_names[test_index]
-
+    train_names = pdb_names[train_index]
     # X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=TEST_SIZE)
 
     pickle.dump(X_test, open("test_X_" + files_name + ".pkl", "wb"))
     pickle.dump(Y_test, open("test_Y_" + files_name + ".pkl", "wb"))
+    pickle.dump(X_train, open("train_X_" + files_name + ".pkl", "wb"))
+    pickle.dump(Y_train, open("train_Y_" + files_name + ".pkl", "wb"))
+
     pickle.dump(test_names, open("test_names_" + files_name + ".pkl", "wb"))
+    pickle.dump(train_names, open("train_names_" + files_name + ".pkl", "wb"))
 
     save_model = tf.keras.callbacks.ModelCheckpoint(filepath=files_name,save_best_only=True, verbose=1)
 
