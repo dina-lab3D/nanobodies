@@ -21,7 +21,7 @@ tf.keras.utils.get_custom_objects().update({'swish': layers.Activation(swish)})
 
 
 CDR_DICT = {3:1, 1:0, 2:2}
-DIM = 1  # normal is 3
+DIM = 3  # normal is 3
 CDR = 3  # normal is 3
 KERNELS = 32  # normal is 32
 RESNET_BLOCKS = 3  # normal is 3
@@ -44,7 +44,7 @@ END_ACTIVATION = "elu"  # normal elu
 LOSS = "mse"
 BINS = False
 POOL = False
-files_name = "DIM_1_no_clip_1"
+files_name = "DIM_3_best_test_1"
 
 
 def reshape_y(y):
@@ -242,19 +242,28 @@ if __name__ == '__main__':
     if DIM == 1:
         X = X[:, :, :, CDR_DICT[CDR]].reshape(-1, 32, 21, 1)
 
-    train_index, test_index, _, _ = train_test_split(np.arange(len(X)), np.arange(len(Y)), test_size=TEST_SIZE)
-    X_train, X_test, Y_train, Y_test = np.array(X[train_index,:,:,:]), np.array(X[test_index,:,:,:]), np.array(Y[train_index,:,:,:,:]), np.array(Y[test_index,:,:,:,:])
-    test_names = pdb_names[test_index]
-    train_names = pdb_names[train_index]
-    # X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=TEST_SIZE)
+    # train_index, test_index, _, _ = train_test_split(np.arange(len(X)), np.arange(len(Y)), test_size=TEST_SIZE)
+    # X_train, X_test, Y_train, Y_test = np.array(X[train_index,:,:,:]), np.array(X[test_index,:,:,:]), np.array(Y[train_index,:,:,:,:]), np.array(Y[test_index,:,:,:,:])
+    # test_names = pdb_names[test_index]
+    # train_names = pdb_names[train_index]
+    #
+    # pickle.dump(X_test, open("test_X_" + files_name + ".pkl", "wb"))
+    # pickle.dump(Y_test, open("test_Y_" + files_name + ".pkl", "wb"))
+    # pickle.dump(X_train, open("train_X_" + files_name + ".pkl", "wb"))
+    # pickle.dump(Y_train, open("train_Y_" + files_name + ".pkl", "wb"))
+    #
+    # pickle.dump(test_names, open("test_names_" + files_name + ".pkl", "wb"))
+    # pickle.dump(train_names, open("train_names_" + files_name + ".pkl", "wb"))
 
-    pickle.dump(X_test, open("test_X_" + files_name + ".pkl", "wb"))
-    pickle.dump(Y_test, open("test_Y_" + files_name + ".pkl", "wb"))
-    pickle.dump(X_train, open("train_X_" + files_name + ".pkl", "wb"))
-    pickle.dump(Y_train, open("train_Y_" + files_name + ".pkl", "wb"))
+    with open("/cs/usr/tomer.cohen13/lab/NN/NanoNetPDBs/NanoNet_arrays/train_X_NanoNet_model.pkl", "rb") as train_x:
+        X_train = pickle.load(train_x)
+    with open("/cs/usr/tomer.cohen13/lab/NN/NanoNetPDBs/NanoNet_arrays/test_X_NanoNet_model.pkl", "rb") as test_x:
+        X_test = pickle.load(test_x)
+    with open("/cs/usr/tomer.cohen13/lab/NN/NanoNetPDBs/NanoNet_arrays/train_Y_NanoNet_model.pkl", "rb") as train_y:
+        Y_train = pickle.load(train_y)
+    with open("/cs/usr/tomer.cohen13/lab/NN/NanoNetPDBs/NanoNet_arrays/test_Y_NanoNet_model.pkl", "rb") as test_y:
+        Y_test = pickle.load(test_y)
 
-    pickle.dump(test_names, open("test_names_" + files_name + ".pkl", "wb"))
-    pickle.dump(train_names, open("train_names_" + files_name + ".pkl", "wb"))
 
     save_model = tf.keras.callbacks.ModelCheckpoint(filepath=files_name,save_best_only=True, verbose=1)
 
