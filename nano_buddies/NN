@@ -1,20 +1,90 @@
-PARAMETERS:
 
-	- activision function (ReLU, leaky ReLU, ELU)
-	- learning rate (step size in the Gradient dicsent)
-	- number of filters (k)
-	- number of strids (s) and size of filters (f) , padding (p)
-	- one hot coding / vector representation.
-	- how to represent cdr1/cdr2?
-	- use recursive network (NLP)? RNN - LSTM
-	- how many layers, etc...
-	- preprocces data ? (zero centered? normalized?)
-	- wights insalization (Xavier, of Xavier/2)
-	- Batch normalization
-	- SGD + Momentum / Nesterov / RMSProp / Adam ( 0.9/0.99)
-	- learning rate decay?
-	- dropout (for regulazation)
-	- in the end - use t-sne to cluster the final vectors 
+Abstract
+
+
+
+
+
+Introduction
+
+
+Methods
+
+Database:
+
+The data used for training the model was obtained from abYbank/ AbDb, a total of 2,185 non-redundant structures of nanobodies and heavy chains of antibodies were used after removing structures without side chains.
+The data was split into training, validation and testing sets randomly: 1,974 structures were used for training,  161 structures were used for validation (7.5%), and 50 structures were used for testing.
+
+Input representation:
+
+The representation of the input differs from what normally used. Only the 3 CDRs sequences were used as input, without the Fr region. Each sequence was put in a different one hot encoding matrix, resulting in a input matrix with a depth of 3.
+The dimension of each CDR sequence matrix was 32*21, 32 for each of the amino acids in the CDR sequence, and 20 columns one for each AA and a special one representing empty position.
+The idea behind this representation is that the sequence of amino acids is redundant since homology modeling tools like RosettaAntibody can model then quite good, and the Fr is not likely to change the structure of the CDRs.
+In addition, by putting each CDR in a different one hot encoding matrix, the network can more easily find connections between the CDRs sequences and the affect they have on the CDR3 structure.
+
+Output representation:
+
+Another different aspect of NanoNet compared to other networks predicting protein structures is its output representation and the loss that was used.
+NanoNet predicts the angles and distances directly using Mean squared error loss instead of trying to predict the angles and distances distributions using categorical cross entropy loss.
+This raises two problems, the first one is the circular loss of the 3 angles, this was solved by predicting the cos and sin of the angles, and retrieving the angle afterwards using the arctan2 function. The second problem is that after converting the angles to cos and sin the loss of the angles in bound by 2, while the distance loss can be much higher and those dominating the loss gradient.
+To overcome this problem, each distance higher than 20 Angstrom was floored to 20 Angstrom and all the distances were divided by 10. This made the distances loss have approximately the same magnitude of the 3 angles.
+
+Figure of angles definition?
+
+Network architecture:
+
+The architecture of NanoNet is quite similar to that of DeepH3, but it consists of two 2d residual blocks and have different output and input.
+It starts with a 2D convolutional layer with 32 kernels and kernel size of (17,17), then it passes through the first 2D residual blocks consisting of 3 blocks with kernel size of (17,17) and 32 kernels. It uses batch normalization and Relu activation.
+
+After that it is transformed into a 32*32*32 matrix and combined with its transpose to create a 32*32*64 matrix.
+Then It passes through a second residual block, consisting of 25 blocks with kernel size of (5,5) and 64 kernels. The residual block has 5 repeats of [1,2,4,8,16] dilations.
+The output of the second residual block is then passed through a dropout layer with a 20% dropout.
+Lastly, the network splits to four layers, each for a different output. Each layer goes through 2 convolutional layers, the first one with 4  kernels, kernel size of (5,5) and Elu activation. The second is the output layer with 1 kernel for the distance with Relu activation, and 2 kernels for the angles with Tanh activation.
+Symmetry is enforced on distance and Omega output matrices by combining the output matrices with their transpose.
+
+Figure of architecture.
+
+Restraints file:
+
+The matrices obtained from NanoNet were converted to restraints files for Rosetta.
+For the distances harmonic function was used with std of 10* loss.  For the angles circular harmonic was used with a std equal to the loss ( loss of the angles not sin, cos).
+A constraint weight of 1 was used for all restraints.
+
+Fr modeling:
+
+The Fr was modeled using RosettaAntibody (antibody.linuxccrelease application) with -vhh_only flag. For antibodies only the heavy chain was modeled.
+For each sequence one model was generated.
+
+CDR3 modeling:
+
+The CDR3 was modeled using RosettaAntibody (antibody_H3.linuxccrelease application) on the model from the previous stage with restraints from the restraints file generated by NanoNet.
+For each nanobody or antibody 200 modeles were generated.
+For the evaluation of NanoNet, 200 modeles    were generated using RosettaAntibody without restraints.
+
+
+Docking and modeling of COVID-19 nanobodies:
+
+In order to further test the performance of NanoNet, 24 nanobodies that interacted with COVID-19 RBD and were not used in the training stage were modeled and docked to the RBD.
+The docking was done using PatchDock.
+
+
+
+Results
+
+
+Figures:
+
+Rmsd rosetta vs nanonet (top1, top5, top10).
+Min score Nanonet vs rmsd, min score rosetta vs rmsd.
+Min rmsd vs top1, top5 and top10, rosetta and nanonet.
+Heatmap prediction examples (distances?)
+Loop length vs rmsd boxplot, rosetta and nanonet
+
+
+
+
+Discussion
+
 
 
 	
