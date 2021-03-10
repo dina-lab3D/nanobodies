@@ -26,10 +26,11 @@ def one_hot_coding(seq, cdr, pdb_name):
     find = [find_cdr1, find_cdr2, find_cdr3]
     [cdr_start, cdr_end] = find[cdr - 1](seq)
     if pdb_name in CDR_POS_DICT and cdr == 3:
+        print(pdb_name)
         [cdr_start, cdr_end] = CDR_POS_DICT[pdb_name]
 
-    cdr_start -=1
-    cdr_end += 1
+    # cdr_start -=1
+    # cdr_end += 1
 
     cdr_len = (cdr_end + 1 - cdr_start)
     # print(cdr_len)
@@ -91,8 +92,8 @@ def remove_pad(one_hot_matrix, seq):
 
     [cdr_start, cdr_end] = find_cdr3(seq)
 
-    cdr_start -=1
-    cdr_end += 1
+    # cdr_start -=1
+    # cdr_end += 1
 
     cdr_len = (cdr_end + 1 - cdr_start)
     pad_left = (CDR_MAX_LENGTH - cdr_len) // 2
@@ -264,10 +265,12 @@ def generate_label(fasta, pdb, cdr=3):
     [cdr_start, cdr_end] = find[cdr-1](seq)
 
     if fasta.split(".")[0] in CDR_POS_DICT:
+        print(fasta.split(".")[0])
         [cdr_start, cdr_end] = CDR_POS_DICT[fasta.split(".")[0]]
 
-    cdr_start -=1
-    cdr_end += 1
+    # cdr_start -=1
+    # cdr_end += 1
+    print(fasta, cdr_start, cdr_end)
 
     # for padding the result matrix with zeros
     pad = (CDR_MAX_LENGTH - (cdr_end+1 - cdr_start)) // 2
