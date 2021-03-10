@@ -21,7 +21,7 @@ tf.keras.utils.get_custom_objects().update({'swish': layers.Activation(swish)})
 
 
 CDR_DICT = {3:1, 1:0, 2:2}
-DIM = 3  # normal is 3
+DIM = 1  # normal is 3
 CDR = 3  # normal is 3
 KERNELS = 32  # normal is 32
 RESNET_BLOCKS = 3  # normal is 3
@@ -30,9 +30,9 @@ FIRST_RESNET_SIZE = (17, 17)  # normal is (17,17)
 DIALETED_RESNET_BLOCKS = 5  # normal is 5
 DIALETION = [1,2,4,8,16]  # normal is [1,2,4,8,16]
 DIALETED_RESNET_SIZE = (5, 5)  # normal is (5,5)
-EPOCHS = 150  # normal is 150
+EPOCHS = 175  # normal is 150
 LR = 0.0005  # normal is 0.0005
-TEST_SIZE = 50/2185  # 50 nano-bodies
+TEST_SIZE = 50/2182  # 50 nano-bodies
 VAL_SIZE = 0.075  # 150 nano-bodies (0.075)
 BATCH = 32  # normal is 32
 DROPOUT = 0.2  # normal is 0.2
@@ -44,7 +44,7 @@ END_ACTIVATION = "elu"  # normal elu
 LOSS = "mse"
 BINS = False
 POOL = False
-files_name = "DIM_3_3_2"
+files_name = "DIM_1_no_clip_1"
 
 
 def reshape_y(y):
