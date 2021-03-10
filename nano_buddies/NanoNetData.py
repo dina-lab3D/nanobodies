@@ -7,7 +7,7 @@ from tqdm import tqdm
 import re
 from NanoNetUtils import generate_label, generate_input, valid_pdb
 
-CDR = 2
+CDR = 3
 BAD_PDBS = ["3U1S_1", "5DRX_1", "6BSP_1"]
 
 
@@ -42,9 +42,9 @@ if __name__ == '__main__':
             os.chdir("..")
     feature_matrix = np.stack(feature_matrix, axis=0)
     input_matrix = np.stack(input_matrix, axis=0)
-    labels_file_name = "nn_labels_{}".format(CDR)
-    input_file_name = "nn_input_{}".format(CDR)
-    pdb_names_file = "pdb_names_{}".format(CDR)
+    labels_file_name = "nn_labels_{}".format(CDR) + "_covid"
+    input_file_name = "nn_input_{}".format(CDR) + "_covid"
+    pdb_names_file = "pdb_names_{}".format(CDR) + "_covid"
     # if TEST:
     #     labels_file_name += "_test"
     #     pdb_names_file += "_test"
