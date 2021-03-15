@@ -63,40 +63,63 @@ def plot_test(trained_model, test_X, test_Y):
 ###################################    for getting training data  #####################################################
 
 
-# with open("/cs/labs/dina/tomer.cohen13/NN/NanoNetPDBs/NanoNet_arrays/nn_input.pkl", "rb") as input_file:
+# with open("/cs/labs/dina/tomer.cohen13/NN/NanoNetPDBs/nn_input_3_no_clip.pkl", "rb") as input_file:
 #     X = pickle.load(input_file)
-# with open("/cs/labs/dina/tomer.cohen13/NN/NanoNetPDBs/NanoNet_arrays/nn_labels.pkl", "rb") as feature_file:
+# with open("/cs/labs/dina/tomer.cohen13/NN/NanoNetPDBs/nn_labels_3_no_clip.pkl", "rb") as feature_file:
 #     Y = pickle.load(feature_file)
 #     # Y = reshape_y(Y)
-# with open("/cs/labs/dina/tomer.cohen13/NN/NanoNetPDBs/NanoNet_arrays/pdb_names.pkl", "rb") as names_file:
+# with open("/cs/labs/dina/tomer.cohen13/NN/NanoNetPDBs/pdb_names_3_no_clip.pkl", "rb") as names_file:
 #     pdb_names = pickle.load(names_file)
 # with open("/cs/labs/dina/tomer.cohen13/NN/NanoNetPDBs/NanoNet_arrays/test_names_NanoNet_model.pkl",  "rb") as test_file_names:
-#     test_names = pickle.load(test_file_names)
+#     old_test_names = pickle.load(test_file_names)
 #
 #
-# model = tf.keras.models.load_model("/cs/labs/dina/tomer.cohen13/NN/NanoNetPDBs/NanoNet_model")
+# # model = tf.keras.models.load_model("/cs/labs/dina/tomer.cohen13/NN/NanoNetPDBs/NanoNet_model")
 #
 #
 # train_X = []
 # train_Y = []
 # train_names = []
+#
+# test_X = []
+# test_Y = []
+# test_names = []
+#
 # for i in range(len(pdb_names)):
-#     if pdb_names[i] not in test_names:
+#     if pdb_names[i] not in old_test_names:
 #         train_X.append(X[i])
 #         train_Y.append(Y[i])
 #         train_names.append(pdb_names[i])
+#     else:
+#         test_X.append(X[i])
+#         test_Y.append(Y[i])
+#         test_names.append(pdb_names[i])
 #
 # train_X = np.stack(train_X, axis=0)
 # train_Y = np.stack(train_Y, axis=0)
 #
-# labels_file_name = "train_Y_NanoNet_model.pkl"
-# input_file_name = "train_X_NanoNet_model.pkl"
-# pdb_names_file = "train_names_NanoNet_model.pkl"
+# test_X = np.stack(test_X, axis=0)
+# test_Y = np.stack(test_Y, axis=0)
 #
 #
-# pickle.dump(train_Y, open(labels_file_name, "wb"))
-# pickle.dump(train_X, open(input_file_name, "wb"))
-# pickle.dump(np.array(train_names), open(pdb_names_file, "wb"))
+# name = "3_no_clip.pkl"
+#
+# train_label_file = "train_Y_{}".format(name)
+# train_input_file = "train_X_{}".format(name)
+# train_pdb_names_file = "train_names_{}".format(name)
+#
+# test_label_file = "test_Y_{}".format(name)
+# test_input_file = "test_X_{}".format(name)
+# test_pdb_names_file = "test_names_{}".format(name)
+#
+# pickle.dump(train_Y, open(train_label_file, "wb"))
+# pickle.dump(train_X, open(train_input_file, "wb"))
+# pickle.dump(np.array(train_names), open(train_pdb_names_file, "wb"))
+#
+# pickle.dump(test_Y, open(test_label_file, "wb"))
+# pickle.dump(test_X, open(test_input_file, "wb"))
+# pickle.dump(np.array(test_names), open(test_pdb_names_file, "wb"))
+
 
 
 ########################################################################################################################
@@ -111,8 +134,8 @@ with open("/cs/usr/tomer.cohen13/lab/NN/CovidTest/pdb_names_3_covid.pkl", "rb") 
     pdb_names = pickle.load(names_file)
 
 
-model = tf.keras.models.load_model("/cs/labs/dina/tomer.cohen13/NN/NanoNetPDBs/NanoNet_model")
-model2 = tf.keras.models.load_model("/cs/labs/dina/tomer.cohen13/NN/NanoNetPDBs/DIM_3_short_5")
+model2 = tf.keras.models.load_model("/cs/labs/dina/tomer.cohen13/NN/NanoNetPDBs/NanoNet_model")
+model = tf.keras.models.load_model("/cs/labs/dina/tomer.cohen13/NN/NanoNetPDBs/DIM_3_best_test_1")
 
 loss = []
 loss2 = []
@@ -126,7 +149,7 @@ names = []
 
 for i in range(len(pdb_names)):
 
-    if "17_RBD" in pdb_names[i].upper() or "36_RBD" in pdb_names[i].upper() or "93_RBD" in pdb_names[i].upper():
+    if "RBD" in pdb_names[i].upper():
         continue
     s = model.evaluate(np.array([X[i]]), [Y[0][i,:,:,:].reshape(1,32,32,1), Y[1][i,:,:,:].reshape(1,32,32,2), Y[2][i,:,:,:].reshape(1,32,32,2), Y[3][i,:,:,:].reshape(1,32,32,2)])
     s2 = model2.evaluate(np.array([X[i]]), [Y[0][i,:,:,:].reshape(1,32,32,1), Y[1][i,:,:,:].reshape(1,32,32,2), Y[2][i,:,:,:].reshape(1,32,32,2), Y[3][i,:,:,:].reshape(1,32,32,2)])
