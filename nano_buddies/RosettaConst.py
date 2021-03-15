@@ -9,12 +9,14 @@ from Bio.PDB import *
 import re
 
 
-DIST_STD = 0.63  # =0.63
-OMEGA_STD = 0.6  # =0.424
-THETA_STD = 0.3  # =0.3
-PHI_STD = 0.22  # =0.22
+DIST_STD = 0.28  # =0.63
+OMEGA_STD = 0.21  # =0.424
+THETA_STD = 0.15  # =0.3
+PHI_STD = 0.11  # =0.22
 
 PROBLEM = ["1XGR_1"]
+
+CDR = 3
 
 
 def write_const_dist(const_file, constraints, cdr3_s, seq):
@@ -76,14 +78,15 @@ def write_const_phi(const_file, constraints, cdr3_s, seq):
             const_file.write("Angle CA {} CB {} CB {} CIRCULARHARMONIC {:.5f} {}\n".format(atom_i, atom_i, atom_j, constraints[i, j], PHI_STD))
 
 
-def write_const_file(sequence, restraints_matrix):
+def write_const_file(sequence, restraints_matrix, cdr=3):
 
     distance_restraints = remove_pad(restraints_matrix[0][0,:,:,0], sequence) * 10  # we divided by factor 10 in NanoNet
     omega_restraints = np.arctan2(remove_pad(restraints_matrix[1][0, :, :, 1], sequence), remove_pad(restraints_matrix[1][0, :, :, 0], sequence))  # angle = arctan(sin, cos)
     thetha_restraints = np.arctan2(remove_pad(restraints_matrix[2][0, :, :, 1], sequence), remove_pad(restraints_matrix[2][0, :, :, 0], sequence))
     phis_restraints = np.arctan2(remove_pad(restraints_matrix[3][0, :, :, 1], sequence), remove_pad(restraints_matrix[3][0, :, :, 0], sequence))
 
-    cdr_s, cdr_e = cdr_annotation.find_cdr3(sequence)
+    finders = [cdr_annotation.find_cdr1, cdr_annotation.find_cdr2, cdr_annotation.find_cdr3]
+    cdr_s, cdr_e = finders[cdr-1](sequence)
     # print(cdr_e - cdr_s+1)
     with open(pdb_dir + "_constraints", 'w') as const_file:
         write_const_dist(const_file, distance_restraints, cdr_s, sequence)
@@ -122,7 +125,7 @@ def sanity_check(all_restraints, pdb, sequence):
         print(sequence[cdr3_s:cdr3_e+1])
         print("{} find_cdr3 error!!!".format(pdb))
         error = True
-    if b-a < 5:
+    if b-a < 3:
         print(seq_aa[a:b + 1])
         print("{} cdr3 too short!!!".format(pdb))
         error = True
@@ -140,21 +143,33 @@ if __name__ == '__main__':
 
     nano_net_model = load_model(args.NanoNet)
     os.chdir(args.Rosetta_pdbs)
-    i = 0
-    for pdb_dir in os.listdir(os.getcwd()):
-        if os.path.isdir(pdb_dir) and re.fullmatch("[a-zA-Z0-9]{4}_[0-9]", pdb_dir) and pdb_dir != "1YC7_1":
-            os.chdir(pdb_dir)
-            model = PDBParser().get_structure(pdb_dir, "grafting/model-0.relaxed.pdb")[0]["H"]
-            if pdb_dir in PROBLEM:
+
+    if CDR == 3:
+        i = 0
+        for pdb_dir in os.listdir(os.getcwd()):
+            if pdb_dir != "NB17_RBDtr" and pdb_dir != "Nb21_RBDtr" and pdb_dir != "7jvb":
+                os.chdir(pdb_dir)
+                model = PDBParser().get_structure(pdb_dir, "grafting/model-0.relaxed.pdb")[0]["H"]
+                if pdb_dir in PROBLEM:
+                    seq = get_sequence(pdb_dir + ".fa")
+                    print(pdb_dir)
+                else:
+                    seq, aa_chain = get_seq(model)
+
+                restraints = nano_net_model.predict(np.array([generate_input(seq, fasta=False)]))
+                write_const_file(seq, restraints)
+                sanity_check(restraints, pdb_dir, seq)
+                os.chdir("..")
+                i += 1
+        print(i)
+
+    else:
+        for pdb_dir in os.listdir(os.getcwd()):
+            if os.path.isdir(pdb_dir) and re.fullmatch("[a-zA-Z0-9]{4}", pdb_dir):
+                os.chdir(pdb_dir)
                 seq = get_sequence(pdb_dir + ".fa")
-                print(pdb_dir)
-            else:
-                seq, aa_chain = get_seq(model)
+                restraints = nano_net_model.predict(np.array([generate_input(seq, fasta=False)]))
+                write_const_file(seq, restraints, CDR)
+                os.chdir("..")
 
-            restraints = nano_net_model.predict(np.array([generate_input(seq, fasta=False)]))
-            write_const_file(seq, restraints)
-            sanity_check(restraints, pdb_dir, seq)
-            os.chdir("..")
-            i += 1
 
-    print(i)
