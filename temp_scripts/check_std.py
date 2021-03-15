@@ -1,8 +1,9 @@
 import numpy as np
 
-OMEGA_VAR = 0.045
-THETA_VAR = 0.02
-PHI_VAR = 0.01
+DISTANCE_VAR = 7.8269e-04
+OMEGA_VAR = 0.0071
+THETA_VAR = 0.0033
+PHI_VAR = 0.0018
 
 
 if __name__ == '__main__':
@@ -37,3 +38,4 @@ if __name__ == '__main__':
         print("{} atan std: {}".format(angle, mean_std))
         print("{} sanity std: {}".format(angle, sanity_std))
 
+print("Distance std: {}".format((DISTANCE_VAR*100)**0.5))
