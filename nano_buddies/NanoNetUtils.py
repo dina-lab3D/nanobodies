@@ -119,7 +119,7 @@ def generate_input(pdb_fasta, fasta=True):
 
 
 def normalize_dist(dist):
-    dist = np.clip(dist,0,20)
+    # dist = np.clip(dist,0,20)
     return dist / 10
 
 
@@ -264,7 +264,7 @@ def generate_label(fasta, pdb, cdr=3):
 
     [cdr_start, cdr_end] = find[cdr-1](seq)
 
-    if fasta.split(".")[0] in CDR_POS_DICT:
+    if fasta.split(".")[0] in CDR_POS_DICT and cdr == 3:
         print(fasta.split(".")[0])
         [cdr_start, cdr_end] = CDR_POS_DICT[fasta.split(".")[0]]
 
@@ -289,14 +289,14 @@ def generate_label(fasta, pdb, cdr=3):
     return labels_matrix
 
 
-# seq = "DVQLVESGGGLVQAGGSLRLSCAASGFTFSNYVMYWGRQAPGKGREWVSGIDSDGSDTAYASSVKGRFTISRDNAKNTLYLQMNNLKPEDTALYYCVKSKDPYGSPWTRSEFDDYWGQGTQVTVSS"
+# seq = "VQLVESGGGLVQPGGSLRLSCAASGFTLDYYAIGWFRQAPGKEREGVSCISSSGDSTHYVDSVKGRFTISRDNAKNTVYLQMNSLKPEDTAVYYCAAQSGSYYWCGSDWHEYDYRGQGTQVTVSS"
 # a, b = find_cdr3(seq)
 # print(a,b)
 # print(seq[a:b+1])
 # print(seq)
 # print(len(seq))
 #
-# model = PDBParser().get_structure("/cs/labs/dina/tomer.cohen13/NN/CovidNbFasta/34/grafting/model-0.relaxed.pdb", "/cs/labs/dina/tomer.cohen13/NN/CovidNbFasta/34/grafting/model-0.relaxed.pdb")[0]["H"]
+# model = PDBParser().get_structure("/cs/usr/tomer.cohen13/lab/NN/CovidTest/1/7kn7/grafting/model-0.relaxed.pdb", "/cs/usr/tomer.cohen13/lab/NN/CovidTest/1/7kn7/grafting/model-0.relaxed.pdb")[0]["H"]
 # seq, aa_residues = get_seq(model)
 #
 # a, b = find_cdr3(seq)
@@ -304,7 +304,7 @@ def generate_label(fasta, pdb, cdr=3):
 # print(seq[a:b+1])
 # print(seq)
 # print(len(seq))
-#
+# #
 #
 # for i in range(len(aa_residues)):
 #     print(aa_residues[i].get_id())
@@ -313,14 +313,23 @@ def generate_label(fasta, pdb, cdr=3):
 #     print(aa.get_id())
 # (",d","dd").
 
-# dir = "/cs/labs/dina/tomer.cohen13/NN/NanoNetPDBs"
+# dir = "/cs/usr/tomer.cohen13/lab/NN/CovidTest/1"
 # os.chdir(dir)
-# for number in range(1,12):
-#     os.chdir("{}/{}".format(dir, number))
-#     for pdb in os.listdir(os.getcwd()):
-#         seq = get_sequence("{}/{}.fa".format(pdb, pdb))
-#         a, b = find_cdr3(seq)
+# for pdb_dir in os.listdir(os.getcwd()):
+#     os.chdir(pdb_dir)
+#     seq1 = get_sequence("{}.fa".format(pdb_dir))
 #
+#     seq2, aa = get_seq(PDBParser().get_structure("ref.pdb", "ref.pdb")[0]["H"])
+#     if seq1 != seq2:
+#         print("ERROR: {}".format(pdb_dir))
+#         print(seq1)
+#         print(seq2)
 #
-#         if b-a < 6:
-#             print(pdb + " : " + seq[a:b+1])
+#     print("^^^^^^^^^^^^^^^^^^^^^^")
+#     print(pdb_dir)
+#     print(find_cdr1(seq1))
+#     print(find_cdr2(seq1))
+#     print(find_cdr3(seq1))
+#
+#     os.chdir("..")
+
