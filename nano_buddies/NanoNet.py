@@ -22,7 +22,7 @@ tf.keras.utils.get_custom_objects().update({'swish': layers.Activation(swish)})
 
 CDR_DICT = {3:1, 1:0, 2:2}
 DIM = 3  # normal is 3
-CDR = 3  # normal is 3
+CDR = 1  # normal is 3
 KERNELS = 32  # normal is 32
 RESNET_BLOCKS = 3  # normal is 3
 RESNET_SIZE = (17, 17)  # normal is (17,17)
@@ -44,7 +44,7 @@ END_ACTIVATION = "elu"  # normal elu
 LOSS = "mse"
 BINS = False
 POOL = False
-files_name = "DIM_3_best_test_1"
+files_name = "DIM_1_best_test_2"
 
 
 def reshape_y(y):
@@ -232,15 +232,15 @@ if __name__ == '__main__':
     model.summary()
     print_parameters()
 
-    with open(args.X, "rb") as input_file:
-        X = pickle.load(input_file)
-    with open(args.Y, "rb") as feature_file:
-        Y = pickle.load(feature_file)
-    with open(args.pdb_names, "rb") as names_file:
-        pdb_names = pickle.load(names_file)
-
-    if DIM == 1:
-        X = X[:, :, :, CDR_DICT[CDR]].reshape(-1, 32, 21, 1)
+    # with open(args.X, "rb") as input_file:
+    #     X = pickle.load(input_file)
+    # with open(args.Y, "rb") as feature_file:
+    #     Y = pickle.load(feature_file)
+    # with open(args.pdb_names, "rb") as names_file:
+    #     pdb_names = pickle.load(names_file)
+    #
+    # if DIM == 1:
+    #     X = X[:, :, :, CDR_DICT[CDR]].reshape(-1, 32, 21, 1)
 
     # train_index, test_index, _, _ = train_test_split(np.arange(len(X)), np.arange(len(Y)), test_size=TEST_SIZE)
     # X_train, X_test, Y_train, Y_test = np.array(X[train_index,:,:,:]), np.array(X[test_index,:,:,:]), np.array(Y[train_index,:,:,:,:]), np.array(Y[test_index,:,:,:,:])
@@ -255,13 +255,13 @@ if __name__ == '__main__':
     # pickle.dump(test_names, open("test_names_" + files_name + ".pkl", "wb"))
     # pickle.dump(train_names, open("train_names_" + files_name + ".pkl", "wb"))
 
-    with open("/cs/usr/tomer.cohen13/lab/NN/NanoNetPDBs/NanoNet_arrays/train_X_NanoNet_model.pkl", "rb") as train_x:
+    with open("/cs/usr/tomer.cohen13/lab/NN/NanoNetPDBs/cdr_1/train_X_1_no_clip.pkl", "rb") as train_x:
         X_train = pickle.load(train_x)
-    with open("/cs/usr/tomer.cohen13/lab/NN/NanoNetPDBs/NanoNet_arrays/test_X_NanoNet_model.pkl", "rb") as test_x:
+    with open("/cs/usr/tomer.cohen13/lab/NN/NanoNetPDBs/cdr_1/test_X_1_no_clip.pkl", "rb") as test_x:
         X_test = pickle.load(test_x)
-    with open("/cs/usr/tomer.cohen13/lab/NN/NanoNetPDBs/NanoNet_arrays/train_Y_NanoNet_model.pkl", "rb") as train_y:
+    with open("/cs/usr/tomer.cohen13/lab/NN/NanoNetPDBs/cdr_1/train_Y_1_no_clip.pkl", "rb") as train_y:
         Y_train = pickle.load(train_y)
-    with open("/cs/usr/tomer.cohen13/lab/NN/NanoNetPDBs/NanoNet_arrays/test_Y_NanoNet_model.pkl", "rb") as test_y:
+    with open("/cs/usr/tomer.cohen13/lab/NN/NanoNetPDBs/cdr_1/test_Y_1_no_clip.pkl", "rb") as test_y:
         Y_test = pickle.load(test_y)
 
 
