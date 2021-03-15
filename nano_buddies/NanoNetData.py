@@ -7,7 +7,7 @@ from tqdm import tqdm
 import re
 from NanoNetUtils import generate_label, generate_input, valid_pdb
 
-CDR = 3
+CDR = 1
 BAD_PDBS = ["3U1S_1", "5DRX_1", "6BSP_1"]
 
 
