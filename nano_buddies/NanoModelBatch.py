@@ -16,7 +16,7 @@ RESTRAINTS_PATH = "/cs/labs/dina/tomer.cohen13/nanobodies/nano_buddies/LoopRestr
 # trained nano_net model path
 NANO_NET_MODEL_PATH = "/cs/labs/dina/tomer.cohen13/NN/NanoNetPDBs/NanoNet_model"
 
-CONST = True
+CONST = False
 DIHEDRAL_WEIGHT = 0.25
 ANGLE_WEIGHT = 1
 DISTANCE_WEIGHT = 1
@@ -99,10 +99,10 @@ def rosetta_model():
     :return:
     """
     time, memory = "2:0:0", "6000m"
-
+    bads = ["7a29", "7c8v", "7c8w", "7can", "7d2z", "7kgk"]
     for pdb_dir in os.listdir(os.getcwd()):
-        if pdb_dir != "17":
-            continue
+        # if pdb_dir not in ["7d2z"]:
+        #     continue
             # -detect_disulf false
             # -camelid true
         os.chdir(pdb_dir)
@@ -116,7 +116,8 @@ def rosetta_model():
             f.write("setenv PATH $PATH':'$ROSETTA_BIN\n")
             f.write("setenv PATH $PATH':'/cs/labs/dina/tomer.cohen13/Blast/bin\n")
             # -exclude_homologs true
-            f.write("antibody.linuxgccrelease -antibody:json_cdr cdrs.json -n_multi_templates 1 -vhh_only -fasta " + pdb_dir + ".fa | tee grafting.log\n")
+            # -antibody:json_cdr cdrs.json
+            f.write("antibody.linuxgccrelease -n_multi_templates 1 -vhh_only -fasta " + pdb_dir + ".fa -constraints:cst_file {}_constraints -constraints:cst_weight 1.0 | tee grafting.log\n".format(pdb_dir))
             f.write("cd grafting\n")
             f.write("rm -f debug*\n")
             f.write("rm -f orientation*\n")
@@ -132,14 +133,14 @@ def rosetta_loops():
 
     :return:
     """
-    time, memory, array = "1-0", "4000m", "10"
+    time, memory, array = "3-0", "4000m", "8"
 
     for pdb_dir in os.listdir(os.getcwd()):
         # if not re.fullmatch("[a-zA-Z0-9]{4}_[0-9]", pdb_dir) or pdb_dir not in LONG:
         #     continue
             # -detect_disulf false
             # -camelid true
-        if "93_new_rbd" != pdb_dir:
+        if pdb_dir == "NB17_RBDtr" or pdb_dir == "Nb21_RBDtr" or pdb_dir == "7jvb" or pdb_dir == "7kn7" :
             continue
         os.chdir(pdb_dir)
         script_name = pdb_dir + ".sh" if not CONST else pdb_dir + "_nanonet.sh" # script file
@@ -163,7 +164,7 @@ def rosetta_loops():
             else:
                 if not os.path.isdir("H3_modeling"):
                     os.mkdir("H3_modeling")
-                f.write("antibody_H3.linuxgccrelease @abH3.flags -s grafting/model-0.relaxed.pdb -nstruct 200 -out:file:scorefile H3_modeling_scores.fasc -out:path:pdb H3_modeling > h3_modeling-0.log\n")
+                f.write("antibody_H3.linuxgccrelease @abH3.flags -s grafting/model-0.relaxed.pdb -nstruct 100 -out:file:scorefile H3_modeling_scores.fasc -out:path:pdb H3_modeling > h3_modeling-0.log\n")
             # for model in range(1,10):
             #     f.write("antibody_H3.linuxgccrelease @abH3.flags -s grafting/model-{}.relaxed.pdb -nstruct 100 > h3_modeling-{}.log\n".format(model, model))
         subprocess.run("sbatch " + script_name,shell=True)  # sends script to the cluster
